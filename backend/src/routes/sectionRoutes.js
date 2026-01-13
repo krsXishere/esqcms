@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const customerController = require('../controllers/customerController');
+const sectionController = require('../controllers/sectionController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { canManageMasterData } = require('../middleware/roleMiddleware');
 
@@ -8,16 +8,16 @@ router.use(authMiddleware);
 
 /**
  * @swagger
- * /customers:
+ * /sections:
  *   get:
- *     summary: Get all customers
- *     description: Retrieve all customers
- *     tags: [Customers]
+ *     summary: Get all sections
+ *     description: Retrieve all sections
+ *     tags: [Sections]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Customers retrieved successfully
+ *         description: Sections retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -28,17 +28,17 @@ router.use(authMiddleware);
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Customer'
+ *                     $ref: '#/components/schemas/Section'
  */
-router.get('/', (req, res) => customerController.getAll(req, res));
+router.get('/', (req, res) => sectionController.getAll(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /sections/{id}:
  *   get:
- *     summary: Get customer by ID
- *     description: Retrieve a customer by ID
- *     tags: [Customers]
+ *     summary: Get section by ID
+ *     description: Retrieve a section by ID
+ *     tags: [Sections]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -48,22 +48,22 @@ router.get('/', (req, res) => customerController.getAll(req, res));
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Section ID
  *     responses:
  *       200:
- *         description: Customer retrieved successfully
+ *         description: Section retrieved successfully
  *       404:
- *         description: Customer not found
+ *         description: Section not found
  */
-router.get('/:id', (req, res) => customerController.getById(req, res));
+router.get('/:id', (req, res) => sectionController.getById(req, res));
 
 /**
  * @swagger
- * /customers:
+ * /sections:
  *   post:
- *     summary: Create new customer
- *     description: Create a new customer (Operator only)
- *     tags: [Customers]
+ *     summary: Create new section
+ *     description: Create a new section (Operator only)
+ *     tags: [Sections]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -71,22 +71,22 @@ router.get('/:id', (req, res) => customerController.getById(req, res));
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CustomerInput'
+ *             $ref: '#/components/schemas/SectionInput'
  *     responses:
  *       201:
- *         description: Customer created successfully
+ *         description: Section created successfully
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.post('/', canManageMasterData, (req, res) => customerController.create(req, res));
+router.post('/', canManageMasterData, (req, res) => sectionController.create(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /sections/{id}:
  *   put:
- *     summary: Update customer
- *     description: Update a customer by ID (Operator only)
- *     tags: [Customers]
+ *     summary: Update section
+ *     description: Update a section by ID (Operator only)
+ *     tags: [Sections]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -96,30 +96,30 @@ router.post('/', canManageMasterData, (req, res) => customerController.create(re
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Section ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CustomerInput'
+ *             $ref: '#/components/schemas/SectionInput'
  *     responses:
  *       200:
- *         description: Customer updated successfully
+ *         description: Section updated successfully
  *       404:
- *         description: Customer not found
+ *         description: Section not found
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.put('/:id', canManageMasterData, (req, res) => customerController.update(req, res));
+router.put('/:id', canManageMasterData, (req, res) => sectionController.update(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /sections/{id}:
  *   delete:
- *     summary: Delete customer
- *     description: Soft delete a customer (Operator only)
- *     tags: [Customers]
+ *     summary: Delete section
+ *     description: Soft delete a section (Operator only)
+ *     tags: [Sections]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -129,15 +129,15 @@ router.put('/:id', canManageMasterData, (req, res) => customerController.update(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Section ID
  *     responses:
  *       200:
- *         description: Customer deleted successfully
+ *         description: Section deleted successfully
  *       404:
- *         description: Customer not found
+ *         description: Section not found
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.delete('/:id', canManageMasterData, (req, res) => customerController.delete(req, res));
+router.delete('/:id', canManageMasterData, (req, res) => sectionController.delete(req, res));
 
 module.exports = router;

@@ -10,67 +10,41 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-// Enum for user roles
 enum Role {
     inspector
     supervisor
     operator
 }
 
-model Type {
-    id        String    @id @default(uuid())
-    typeName  String    @map("type_name") @db.VarChar(30)
-    createdAt DateTime  @default(now()) @map("created_at")
-    updatedAt DateTime? @updatedAt @map("updated_at")
-    deletedAt DateTime? @map("deleted_at")
-
-    @@map("types")
+enum DirStatus {
+    pending
+    revision
+    approved
 }
 
-model Model {
-    id        String    @id @default(uuid())
-    modelName String    @map("model_name") @db.VarChar(30)
-    createdAt DateTime  @default(now()) @map("created_at")
-    updatedAt DateTime? @updatedAt @map("updated_at")
-    deletedAt DateTime? @map("deleted_at")
-
-    @@map("models")
+enum MeasurementStatus {
+    ok
+    ng
 }
 
-model Part {
-    id         String    @id @default(uuid())
-    partNumber String    @unique @map("part_number") @db.VarChar(20)
-    partName   String    @map("part_name") @db.VarChar(30)
-    createdAt  DateTime  @default(now()) @map("created_at")
-    updatedAt  DateTime? @updatedAt @map("updated_at")
-    deletedAt  DateTime? @map("deleted_at")
-
-    @@map("parts")
+enum VisualInspectionStatus {
+    good
+    after_repair @map("after-repair")
+    na           @map("n/a")
 }
 
-model DeliveryOrder {
-    id                String    @id @default(uuid())
-    deliveryOrderCode String    @unique @map("delivery_order_code") @db.VarChar(20)
-    attachment        String?   @db.Text
-    createdAt         DateTime  @default(now()) @map("created_at")
-    updatedAt         DateTime? @updatedAt @map("updated_at")
-    deletedAt         DateTime? @map("deleted_at")
-
-    @@map("delivery_orders")
+enum TemplateType {
+    dir
+    fi
 }
 
-model Material {
-    id           String    @id @default(uuid())
-    materialName String    @map("material_name") @db.VarChar(30)
-    createdAt    DateTime  @default(now()) @map("created_at")
-    updatedAt    DateTime? @updatedAt @map("updated_at")
-    deletedAt    DateTime? @map("deleted_at")
-
-    @@map("materials")
+enum ReferenceType {
+    dir
+    fi
 }
 
 model User {
-    id             String    @id @default(uuid())
+    id             String    @id @default(uuid()) @db.Uuid
     role           Role
     fullName       String    @map("full_name") @db.VarChar(50)
     email          String    @unique @db.VarChar(100)
@@ -80,15 +54,353 @@ model User {
     updatedAt      DateTime? @updatedAt @map("updated_at")
     deletedAt      DateTime? @map("deleted_at")
 
+    // Relations
+    dirs                 Dir[]
+    fiOperator           Fi[]                  @relation("FiOperator")
+    checksheetRevisions  ChecksheetRevision[]  @relation("ChecksheetRevisionUser")
+    checksheetApprovals  ChecksheetApproval[]  @relation("ChecksheetApprovalUser")
+
     @@map("users")
 }
 
+model Model {
+    id        String    @id @default(uuid()) @db.Uuid
+    modelName String    @map("model_name") @db.VarChar(30)
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime? @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+
+    // Relations
+    dirs                Dir[]
+    fis                 Fi[]
+    drawings            Drawing[]
+    checksheetTemplates ChecksheetTemplate[]
+
+    @@map("models")
+}
+
+model Part {
+    id         String    @id @default(uuid()) @db.Uuid
+    partNumber String    @unique @map("part_number") @db.VarChar(20)
+    partName   String    @map("part_name") @db.VarChar(30)
+    createdAt  DateTime  @default(now()) @map("created_at")
+    updatedAt  DateTime? @updatedAt @map("updated_at")
+    deletedAt  DateTime? @map("deleted_at")
+
+    // Relations
+    dirs                Dir[]
+    drawings            Drawing[]
+    checksheetTemplates ChecksheetTemplate[]
+
+    @@map("parts")
+}
+
 model Customer {
-    id           String    @id @default(uuid())
+    id           String    @id @default(uuid()) @db.Uuid
     customerName String    @map("customer_name") @db.VarChar(30)
     createdAt    DateTime  @default(now()) @map("created_at")
     updatedAt    DateTime? @updatedAt @map("updated_at")
     deletedAt    DateTime? @map("deleted_at")
 
+    // Relations
+    dirs Dir[]
+    fis  Fi[]
+
     @@map("customers")
+}
+
+model Material {
+    id           String    @id @default(uuid()) @db.Uuid
+    materialName String    @map("material_name") @db.VarChar(30)
+    createdAt    DateTime  @default(now()) @map("created_at")
+    updatedAt    DateTime? @updatedAt @map("updated_at")
+    deletedAt    DateTime? @map("deleted_at")
+
+    // Relations
+    dirs Dir[]
+
+    @@map("materials")
+}
+
+model Type {
+    id        String    @id @default(uuid()) @db.Uuid
+    typeName  String    @map("type_name") @db.VarChar(30)
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime? @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+
+    @@map("types")
+}
+
+model DeliveryOrder {
+    id                String    @id @default(uuid()) @db.Uuid
+    deliveryOrderCode String    @unique @map("delivery_order_code") @db.VarChar(20)
+    attachment        String    @db.Text
+    createdAt         DateTime  @default(now()) @map("created_at")
+    updatedAt         DateTime? @updatedAt @map("updated_at")
+    deletedAt         DateTime? @map("deleted_at")
+
+    // Relations
+    dirs Dir[]
+
+    @@map("delivery_orders")
+}
+
+model Section {
+    id          String    @id @default(uuid()) @db.Uuid
+    sectionCode String    @unique @map("section_code") @db.VarChar(20)
+    sectionName String    @map("section_name") @db.VarChar(50)
+    createdAt   DateTime  @default(now()) @map("created_at")
+    updatedAt   DateTime? @updatedAt @map("updated_at")
+    deletedAt   DateTime? @map("deleted_at")
+
+    // Relations
+    dirs Dir[]
+    fis  Fi[]
+
+    @@map("sections")
+}
+
+model Shift {
+    id        String    @id @default(uuid()) @db.Uuid
+    shiftCode String    @unique @map("shift_code") @db.VarChar(20)
+    shiftName String    @map("shift_name") @db.VarChar(30)
+    startTime DateTime  @map("start_time") @db.Time()
+    endTime   DateTime  @map("end_time") @db.Time()
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime? @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+
+    // Relations
+    dirs Dir[]
+    fis  Fi[]
+
+    @@map("shifts")
+}
+
+model RejectReason {
+    id          String    @id @default(uuid()) @db.Uuid
+    reasonCode  String    @unique @map("reason_code") @db.VarChar(20)
+    reasonName  String    @map("reason_name") @db.VarChar(100)
+    description String    @db.Text
+    createdAt   DateTime  @default(now()) @map("created_at")
+    updatedAt   DateTime? @updatedAt @map("updated_at")
+    deletedAt   DateTime? @map("deleted_at")
+
+    // Relations
+    measurementPhotos MeasurementPhoto[]
+
+    @@map("reject_reasons")
+}
+
+model Dir {
+    id                   String    @id @default(uuid()) @db.Uuid
+    idDir                String    @map("id_dir") @db.VarChar(30)
+    modelId              String    @map("model_id") @db.Uuid
+    partId               String    @map("part_id") @db.Uuid
+    operatorId           String    @map("operator_id") @db.Uuid
+    customerId           String    @map("customer_id") @db.Uuid
+    deliveryOrderId      String    @map("delivery_order_id") @db.Uuid
+    materialId           String    @map("material_id") @db.Uuid
+    shiftId              String    @map("shift_id") @db.Uuid
+    sectionId            String    @map("section_id") @db.Uuid
+    checksheetTemplateId String?   @map("checksheet_template_id") @db.Uuid
+    serialNumber         String    @unique @map("serial_number") @db.VarChar(20)
+    recommendation       String?   @db.Text
+    generalNote          String?   @map("general_note") @db.Text
+    status               DirStatus @default(pending)
+    createdAt            DateTime  @default(now()) @map("created_at")
+    updatedAt            DateTime? @updatedAt @map("updated_at")
+    deletedAt            DateTime? @map("deleted_at")
+
+    // Relations
+    model              Model               @relation(fields: [modelId], references: [id])
+    part               Part                @relation(fields: [partId], references: [id])
+    operator           User                @relation(fields: [operatorId], references: [id])
+    customer           Customer            @relation(fields: [customerId], references: [id])
+    deliveryOrder      DeliveryOrder       @relation(fields: [deliveryOrderId], references: [id])
+    material           Material            @relation(fields: [materialId], references: [id])
+    shift              Shift               @relation(fields: [shiftId], references: [id])
+    section            Section             @relation(fields: [sectionId], references: [id])
+    checksheetTemplate ChecksheetTemplate? @relation(fields: [checksheetTemplateId], references: [id])
+    measurements       Measurement[]
+
+    @@map("dirs")
+}
+
+model Measurement {
+    id           String            @id @default(uuid()) @db.Uuid
+    dirId        String            @map("dir_id") @db.Uuid
+    dimensional  Float
+    nominal      Float
+    toleranceMin Float             @map("tolerance_min")
+    toleranceMax Float             @map("tolerance_max")
+    actual       Float
+    status       MeasurementStatus @default(ok)
+    createdAt    DateTime          @default(now()) @map("created_at")
+    updatedAt    DateTime?         @updatedAt @map("updated_at")
+    deletedAt    DateTime?         @map("deleted_at")
+
+    // Relations
+    dir    Dir                @relation(fields: [dirId], references: [id])
+    photos MeasurementPhoto[]
+
+    @@map("measurements")
+}
+
+model MeasurementPhoto {
+    id             String    @id @default(uuid()) @db.Uuid
+    measurementId  String    @map("measurement_id") @db.Uuid
+    rejectReasonId String    @map("reject_reason_id") @db.Uuid
+    photoPath      String    @map("photo_path") @db.Text
+    remark         String?   @db.Text
+    createdAt      DateTime  @default(now()) @map("created_at")
+    updatedAt      DateTime? @updatedAt @map("updated_at")
+    deletedAt      DateTime? @map("deleted_at")
+
+    // Relations
+    measurement  Measurement  @relation(fields: [measurementId], references: [id])
+    rejectReason RejectReason @relation(fields: [rejectReasonId], references: [id])
+
+    @@map("measurement_photos")
+}
+
+model Fi {
+    id                    String    @id @default(uuid()) @db.Uuid
+    idFi                  String    @map("id_fi") @db.VarChar(30)
+    fiNumber              String    @map("fi_number") @db.VarChar(20)
+    modelId               String    @map("model_id") @db.Uuid
+    operatorId            String    @map("operator_id") @db.Uuid
+    customerId            String    @map("customer_id") @db.Uuid
+    shiftId               String    @map("shift_id") @db.Uuid
+    sectionId             String    @map("section_id") @db.Uuid
+    checksheetTemplateId  String?   @map("checksheet_template_id") @db.Uuid
+    customerSpecification String    @map("customer_specification") @db.Text
+    impellerDiameter      Float     @map("impeller_diameter")
+    numericField          Float     @map("numeric_field")
+    generalNote           String    @map("general_note") @db.Text
+    status                DirStatus @default(pending)
+    createdAt             DateTime  @default(now()) @map("created_at")
+    updatedAt             DateTime? @updatedAt @map("updated_at")
+    deletedAt             DateTime? @map("deleted_at")
+
+    // Relations
+    model              Model               @relation(fields: [modelId], references: [id])
+    operator           User                @relation("FiOperator", fields: [operatorId], references: [id])
+    customer           Customer            @relation(fields: [customerId], references: [id])
+    shift              Shift               @relation(fields: [shiftId], references: [id])
+    section            Section             @relation(fields: [sectionId], references: [id])
+    checksheetTemplate ChecksheetTemplate? @relation(fields: [checksheetTemplateId], references: [id])
+    visualInspections  VisualInspection[]
+
+    @@map("fis")
+}
+
+model VisualInspection {
+    id        String                 @id @default(uuid()) @db.Uuid
+    fiId      String                 @map("fi_id") @db.Uuid
+    itemName  String                 @map("item_name") @db.VarChar(100)
+    status    VisualInspectionStatus @default(good)
+    remark    String?                @db.Text
+    createdAt DateTime               @default(now()) @map("created_at")
+    updatedAt DateTime?              @updatedAt @map("updated_at")
+    deletedAt DateTime?              @map("deleted_at")
+
+    // Relations
+    fi Fi @relation(fields: [fiId], references: [id])
+
+    @@map("visual_inspections")
+}
+
+model Drawing {
+    id        String    @id @default(uuid()) @db.Uuid
+    modelId   String    @map("model_id") @db.Uuid
+    partId    String    @map("part_id") @db.Uuid
+    fileName  String    @map("file_name") @db.VarChar(255)
+    filePath  String    @map("file_path") @db.Text
+    fileType  String    @map("file_type") @db.VarChar(20)
+    version   String    @db.VarChar(20)
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime? @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+
+    // Relations
+    model Model @relation(fields: [modelId], references: [id])
+    part  Part  @relation(fields: [partId], references: [id])
+
+    @@map("drawings")
+}
+
+model ChecksheetTemplate {
+    id           String       @id @default(uuid()) @db.Uuid
+    templateCode String       @unique @map("template_code") @db.VarChar(20)
+    templateName String       @map("template_name") @db.VarChar(100)
+    type         TemplateType
+    modelId      String       @map("model_id") @db.Uuid
+    partId       String       @map("part_id") @db.Uuid
+    description  String       @db.Text
+    createdAt    DateTime     @default(now()) @map("created_at")
+    updatedAt    DateTime?    @updatedAt @map("updated_at")
+    deletedAt    DateTime?    @map("deleted_at")
+
+    // Relations
+    model         Model          @relation(fields: [modelId], references: [id])
+    part          Part           @relation(fields: [partId], references: [id])
+    templateItems TemplateItem[]
+    dirs          Dir[]
+    fis           Fi[]
+
+    @@map("checksheet_templates")
+}
+
+model TemplateItem {
+    id           String    @id @default(uuid()) @db.Uuid
+    templateId   String    @map("template_id") @db.Uuid
+    itemName     String    @map("item_name") @db.VarChar(100)
+    nominal      Float?
+    toleranceMin Float?    @map("tolerance_min")
+    toleranceMax Float?    @map("tolerance_max")
+    sequence     Int
+    createdAt    DateTime  @default(now()) @map("created_at")
+    updatedAt    DateTime? @updatedAt @map("updated_at")
+    deletedAt    DateTime? @map("deleted_at")
+
+    // Relations
+    template ChecksheetTemplate @relation(fields: [templateId], references: [id])
+
+    @@map("template_items")
+}
+
+model ChecksheetRevision {
+    id             String        @id @default(uuid()) @db.Uuid
+    referenceType  ReferenceType @map("reference_type")
+    referenceId    String        @map("reference_id") @db.Uuid
+    revisionNumber Int           @map("revision_number")
+    revisionNote   String        @map("revision_note") @db.Text
+    revisedBy      String        @map("revised_by") @db.Uuid
+    createdAt      DateTime      @default(now()) @map("created_at")
+    updatedAt      DateTime?     @updatedAt @map("updated_at")
+    deletedAt      DateTime?     @map("deleted_at")
+
+    // Relations
+    revisedByUser User @relation("ChecksheetRevisionUser", fields: [revisedBy], references: [id])
+
+    @@map("checksheet_revisions")
+}
+
+model ChecksheetApproval {
+    id            String        @id @default(uuid()) @db.Uuid
+    referenceType ReferenceType @map("reference_type")
+    referenceId   String        @map("reference_id") @db.Uuid
+    approvedBy    String        @map("approved_by") @db.Uuid
+    approvedAt    DateTime      @map("approved_at")
+    note          String?       @db.Text
+    createdAt     DateTime      @default(now()) @map("created_at")
+    updatedAt     DateTime?     @updatedAt @map("updated_at")
+    deletedAt     DateTime?     @map("deleted_at")
+
+    // Relations
+    approvedByUser User @relation("ChecksheetApprovalUser", fields: [approvedBy], references: [id])
+
+    @@map("checksheet_approvals")
 }

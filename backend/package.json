@@ -9,13 +9,21 @@
         "prisma:generate": "prisma generate",
         "prisma:migrate": "prisma migrate dev",
         "prisma:studio": "prisma studio",
-        "prisma:push": "prisma db push"
+        "prisma:push": "prisma db push",
+        "prisma:seed": "node prisma/seed.js",
+        "prisma:reset": "prisma migrate reset --force"
+    },
+    "prisma": {
+        "seed": "node prisma/seed.js"
     },
     "dependencies": {
         "@prisma/client": "^5.7.0",
         "bcrypt": "^5.1.1",
         "cors": "^2.8.5",
-        "express": "^4.18.2"
+        "express": "^4.18.2",
+        "jsonwebtoken": "^9.0.3",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.1"
     },
     "devDependencies": {
         "nodemon": "^3.0.2",

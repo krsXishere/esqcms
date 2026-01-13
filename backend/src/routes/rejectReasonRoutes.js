@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const customerController = require('../controllers/customerController');
+const rejectReasonController = require('../controllers/rejectReasonController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { canManageMasterData } = require('../middleware/roleMiddleware');
 
@@ -8,16 +8,16 @@ router.use(authMiddleware);
 
 /**
  * @swagger
- * /customers:
+ * /reject-reasons:
  *   get:
- *     summary: Get all customers
- *     description: Retrieve all customers
- *     tags: [Customers]
+ *     summary: Get all reject reasons
+ *     description: Retrieve all reject reasons
+ *     tags: [Reject Reasons]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Customers retrieved successfully
+ *         description: Reject reasons retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -28,17 +28,17 @@ router.use(authMiddleware);
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Customer'
+ *                     $ref: '#/components/schemas/RejectReason'
  */
-router.get('/', (req, res) => customerController.getAll(req, res));
+router.get('/', (req, res) => rejectReasonController.getAll(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /reject-reasons/{id}:
  *   get:
- *     summary: Get customer by ID
- *     description: Retrieve a customer by ID
- *     tags: [Customers]
+ *     summary: Get reject reason by ID
+ *     description: Retrieve a reject reason by ID
+ *     tags: [Reject Reasons]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -48,22 +48,22 @@ router.get('/', (req, res) => customerController.getAll(req, res));
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Reject Reason ID
  *     responses:
  *       200:
- *         description: Customer retrieved successfully
+ *         description: Reject reason retrieved successfully
  *       404:
- *         description: Customer not found
+ *         description: Reject reason not found
  */
-router.get('/:id', (req, res) => customerController.getById(req, res));
+router.get('/:id', (req, res) => rejectReasonController.getById(req, res));
 
 /**
  * @swagger
- * /customers:
+ * /reject-reasons:
  *   post:
- *     summary: Create new customer
- *     description: Create a new customer (Operator only)
- *     tags: [Customers]
+ *     summary: Create new reject reason
+ *     description: Create a new reject reason (Operator only)
+ *     tags: [Reject Reasons]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -71,22 +71,22 @@ router.get('/:id', (req, res) => customerController.getById(req, res));
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CustomerInput'
+ *             $ref: '#/components/schemas/RejectReasonInput'
  *     responses:
  *       201:
- *         description: Customer created successfully
+ *         description: Reject reason created successfully
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.post('/', canManageMasterData, (req, res) => customerController.create(req, res));
+router.post('/', canManageMasterData, (req, res) => rejectReasonController.create(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /reject-reasons/{id}:
  *   put:
- *     summary: Update customer
- *     description: Update a customer by ID (Operator only)
- *     tags: [Customers]
+ *     summary: Update reject reason
+ *     description: Update a reject reason by ID (Operator only)
+ *     tags: [Reject Reasons]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -96,30 +96,30 @@ router.post('/', canManageMasterData, (req, res) => customerController.create(re
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Reject Reason ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CustomerInput'
+ *             $ref: '#/components/schemas/RejectReasonInput'
  *     responses:
  *       200:
- *         description: Customer updated successfully
+ *         description: Reject reason updated successfully
  *       404:
- *         description: Customer not found
+ *         description: Reject reason not found
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.put('/:id', canManageMasterData, (req, res) => customerController.update(req, res));
+router.put('/:id', canManageMasterData, (req, res) => rejectReasonController.update(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /reject-reasons/{id}:
  *   delete:
- *     summary: Delete customer
- *     description: Soft delete a customer (Operator only)
- *     tags: [Customers]
+ *     summary: Delete reject reason
+ *     description: Soft delete a reject reason (Operator only)
+ *     tags: [Reject Reasons]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -129,15 +129,15 @@ router.put('/:id', canManageMasterData, (req, res) => customerController.update(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Reject Reason ID
  *     responses:
  *       200:
- *         description: Customer deleted successfully
+ *         description: Reject reason deleted successfully
  *       404:
- *         description: Customer not found
+ *         description: Reject reason not found
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.delete('/:id', canManageMasterData, (req, res) => customerController.delete(req, res));
+router.delete('/:id', canManageMasterData, (req, res) => rejectReasonController.delete(req, res));
 
 module.exports = router;

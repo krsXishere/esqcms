@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./src/config/swagger');
 const routes = require('./src/routes');
 
 const app = express();
@@ -10,6 +12,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'ESQCMS API Documentation'
+}));
+
 // API Routes
 app.use('/api', routes);
 
@@ -19,6 +28,7 @@ app.get('/', (req, res) => {
         message: 'Welcome to ESQCMS API',
         version: '1.0.0',
         endpoints: {
+            // Master Data
             types: '/api/types',
             models: '/api/models',
             parts: '/api/parts',
@@ -26,6 +36,12 @@ app.get('/', (req, res) => {
             materials: '/api/materials',
             users: '/api/users',
             customers: '/api/customers',
+            // Transactions
+            dirs: '/api/dirs',
+            measurements: '/api/measurements',
+            fis: '/api/fis',
+            visualInspections: '/api/visual-inspections',
+            // Utility
             health: '/api/health',
         },
     });

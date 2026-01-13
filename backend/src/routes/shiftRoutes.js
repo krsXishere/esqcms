@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const customerController = require('../controllers/customerController');
+const shiftController = require('../controllers/shiftController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { canManageMasterData } = require('../middleware/roleMiddleware');
 
@@ -8,16 +8,16 @@ router.use(authMiddleware);
 
 /**
  * @swagger
- * /customers:
+ * /shifts:
  *   get:
- *     summary: Get all customers
- *     description: Retrieve all customers
- *     tags: [Customers]
+ *     summary: Get all shifts
+ *     description: Retrieve all shifts
+ *     tags: [Shifts]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Customers retrieved successfully
+ *         description: Shifts retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -28,17 +28,17 @@ router.use(authMiddleware);
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Customer'
+ *                     $ref: '#/components/schemas/Shift'
  */
-router.get('/', (req, res) => customerController.getAll(req, res));
+router.get('/', (req, res) => shiftController.getAll(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /shifts/{id}:
  *   get:
- *     summary: Get customer by ID
- *     description: Retrieve a customer by ID
- *     tags: [Customers]
+ *     summary: Get shift by ID
+ *     description: Retrieve a shift by ID
+ *     tags: [Shifts]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -48,22 +48,22 @@ router.get('/', (req, res) => customerController.getAll(req, res));
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Shift ID
  *     responses:
  *       200:
- *         description: Customer retrieved successfully
+ *         description: Shift retrieved successfully
  *       404:
- *         description: Customer not found
+ *         description: Shift not found
  */
-router.get('/:id', (req, res) => customerController.getById(req, res));
+router.get('/:id', (req, res) => shiftController.getById(req, res));
 
 /**
  * @swagger
- * /customers:
+ * /shifts:
  *   post:
- *     summary: Create new customer
- *     description: Create a new customer (Operator only)
- *     tags: [Customers]
+ *     summary: Create new shift
+ *     description: Create a new shift (Operator only)
+ *     tags: [Shifts]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -71,22 +71,22 @@ router.get('/:id', (req, res) => customerController.getById(req, res));
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CustomerInput'
+ *             $ref: '#/components/schemas/ShiftInput'
  *     responses:
  *       201:
- *         description: Customer created successfully
+ *         description: Shift created successfully
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.post('/', canManageMasterData, (req, res) => customerController.create(req, res));
+router.post('/', canManageMasterData, (req, res) => shiftController.create(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /shifts/{id}:
  *   put:
- *     summary: Update customer
- *     description: Update a customer by ID (Operator only)
- *     tags: [Customers]
+ *     summary: Update shift
+ *     description: Update a shift by ID (Operator only)
+ *     tags: [Shifts]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -96,30 +96,30 @@ router.post('/', canManageMasterData, (req, res) => customerController.create(re
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Shift ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CustomerInput'
+ *             $ref: '#/components/schemas/ShiftInput'
  *     responses:
  *       200:
- *         description: Customer updated successfully
+ *         description: Shift updated successfully
  *       404:
- *         description: Customer not found
+ *         description: Shift not found
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.put('/:id', canManageMasterData, (req, res) => customerController.update(req, res));
+router.put('/:id', canManageMasterData, (req, res) => shiftController.update(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /shifts/{id}:
  *   delete:
- *     summary: Delete customer
- *     description: Soft delete a customer (Operator only)
- *     tags: [Customers]
+ *     summary: Delete shift
+ *     description: Soft delete a shift (Operator only)
+ *     tags: [Shifts]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -129,15 +129,15 @@ router.put('/:id', canManageMasterData, (req, res) => customerController.update(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Shift ID
  *     responses:
  *       200:
- *         description: Customer deleted successfully
+ *         description: Shift deleted successfully
  *       404:
- *         description: Customer not found
+ *         description: Shift not found
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.delete('/:id', canManageMasterData, (req, res) => customerController.delete(req, res));
+router.delete('/:id', canManageMasterData, (req, res) => shiftController.delete(req, res));
 
 module.exports = router;

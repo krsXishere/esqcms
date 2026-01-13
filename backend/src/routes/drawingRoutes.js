@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const customerController = require('../controllers/customerController');
+const drawingController = require('../controllers/drawingController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { canManageMasterData } = require('../middleware/roleMiddleware');
 
@@ -8,16 +8,16 @@ router.use(authMiddleware);
 
 /**
  * @swagger
- * /customers:
+ * /drawings:
  *   get:
- *     summary: Get all customers
- *     description: Retrieve all customers
- *     tags: [Customers]
+ *     summary: Get all drawings
+ *     description: Retrieve all drawings
+ *     tags: [Drawings]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Customers retrieved successfully
+ *         description: Drawings retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -28,17 +28,17 @@ router.use(authMiddleware);
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Customer'
+ *                     $ref: '#/components/schemas/Drawing'
  */
-router.get('/', (req, res) => customerController.getAll(req, res));
+router.get('/', (req, res) => drawingController.getAll(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /drawings/{id}:
  *   get:
- *     summary: Get customer by ID
- *     description: Retrieve a customer by ID
- *     tags: [Customers]
+ *     summary: Get drawing by ID
+ *     description: Retrieve a drawing by ID
+ *     tags: [Drawings]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -48,22 +48,22 @@ router.get('/', (req, res) => customerController.getAll(req, res));
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Drawing ID
  *     responses:
  *       200:
- *         description: Customer retrieved successfully
+ *         description: Drawing retrieved successfully
  *       404:
- *         description: Customer not found
+ *         description: Drawing not found
  */
-router.get('/:id', (req, res) => customerController.getById(req, res));
+router.get('/:id', (req, res) => drawingController.getById(req, res));
 
 /**
  * @swagger
- * /customers:
+ * /drawings:
  *   post:
- *     summary: Create new customer
- *     description: Create a new customer (Operator only)
- *     tags: [Customers]
+ *     summary: Create new drawing
+ *     description: Create a new drawing (Operator only)
+ *     tags: [Drawings]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -71,22 +71,22 @@ router.get('/:id', (req, res) => customerController.getById(req, res));
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CustomerInput'
+ *             $ref: '#/components/schemas/DrawingInput'
  *     responses:
  *       201:
- *         description: Customer created successfully
+ *         description: Drawing created successfully
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.post('/', canManageMasterData, (req, res) => customerController.create(req, res));
+router.post('/', canManageMasterData, (req, res) => drawingController.create(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /drawings/{id}:
  *   put:
- *     summary: Update customer
- *     description: Update a customer by ID (Operator only)
- *     tags: [Customers]
+ *     summary: Update drawing
+ *     description: Update a drawing by ID (Operator only)
+ *     tags: [Drawings]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -96,30 +96,30 @@ router.post('/', canManageMasterData, (req, res) => customerController.create(re
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Drawing ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CustomerInput'
+ *             $ref: '#/components/schemas/DrawingInput'
  *     responses:
  *       200:
- *         description: Customer updated successfully
+ *         description: Drawing updated successfully
  *       404:
- *         description: Customer not found
+ *         description: Drawing not found
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.put('/:id', canManageMasterData, (req, res) => customerController.update(req, res));
+router.put('/:id', canManageMasterData, (req, res) => drawingController.update(req, res));
 
 /**
  * @swagger
- * /customers/{id}:
+ * /drawings/{id}:
  *   delete:
- *     summary: Delete customer
- *     description: Soft delete a customer (Operator only)
- *     tags: [Customers]
+ *     summary: Delete drawing
+ *     description: Soft delete a drawing (Operator only)
+ *     tags: [Drawings]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -129,15 +129,15 @@ router.put('/:id', canManageMasterData, (req, res) => customerController.update(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Customer ID
+ *         description: Drawing ID
  *     responses:
  *       200:
- *         description: Customer deleted successfully
+ *         description: Drawing deleted successfully
  *       404:
- *         description: Customer not found
+ *         description: Drawing not found
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.delete('/:id', canManageMasterData, (req, res) => customerController.delete(req, res));
+router.delete('/:id', canManageMasterData, (req, res) => drawingController.delete(req, res));
 
 module.exports = router;
