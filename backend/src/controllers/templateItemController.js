@@ -112,19 +112,28 @@ class TemplateItemController {
 
     async createBulk(req, res) {
         try {
-            const { templateId, items } = req.body;
+            const { items } = req.body;
 
-            if (!templateId || !items || !Array.isArray(items) || items.length === 0) {
-                return ResponseHelper.badRequest(res, 'Template ID and items array are required');
+            if (!items || !Array.isArray(items) || items.length === 0) {
+                return ResponseHelper.badRequest(res, 'Items array is required');
             }
 
-            const itemsData = items.map((item, index) => ({
-                templateId,
+            // Validate each item has required fields
+            const invalidItems = items.filter(item =>
+                !item.templateId || !item.itemName || item.sequence === undefined
+            );
+
+            if (invalidItems.length > 0) {
+                return ResponseHelper.badRequest(res, 'Each item must have templateId, itemName, and sequence');
+            }
+
+            const itemsData = items.map((item) => ({
+                templateId: item.templateId,
                 itemName: item.itemName,
                 nominal: item.nominal ? parseFloat(item.nominal) : null,
                 toleranceMin: item.toleranceMin ? parseFloat(item.toleranceMin) : null,
                 toleranceMax: item.toleranceMax ? parseFloat(item.toleranceMax) : null,
-                sequence: item.sequence !== undefined ? parseInt(item.sequence) : index + 1,
+                sequence: parseInt(item.sequence),
             }));
 
             const result = await prisma.templateItem.createMany({
@@ -134,6 +143,9 @@ class TemplateItemController {
             return ResponseHelper.created(res, { count: result.count }, `${result.count} template items created successfully`);
         } catch (error) {
             console.error('Error creating template items:', error);
+            if (error.code === 'P2003') {
+                return ResponseHelper.badRequest(res, 'One or more template references are invalid');
+            }
             return ResponseHelper.error(res, 'Failed to create template items');
         }
     }

@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const ResponseHelper = require('../utils/responseHelper');
+const codeGenerator = require('../utils/codeGenerator');
 
 class ChecksheetTemplateController {
     async getAll(req, res) {
@@ -77,9 +78,9 @@ class ChecksheetTemplateController {
 
     async create(req, res) {
         try {
-            const { templateCode, templateName, type, modelId, partId, description } = req.body;
+            const { templateName, type, modelId, partId, description } = req.body;
 
-            if (!templateCode || !templateName || !type || !modelId || !partId || !description) {
+            if (!templateName || !type || !modelId || !partId || !description) {
                 return ResponseHelper.badRequest(res, 'All fields are required');
             }
 
@@ -87,6 +88,8 @@ class ChecksheetTemplateController {
             if (!validTypes.includes(type)) {
                 return ResponseHelper.badRequest(res, 'Invalid type. Must be dir or fi');
             }
+
+            const templateCode = codeGenerator.generateTemplateCode();
 
             const template = await prisma.checksheetTemplate.create({
                 data: { templateCode, templateName, type, modelId, partId, description },
@@ -112,7 +115,7 @@ class ChecksheetTemplateController {
     async update(req, res) {
         try {
             const { id } = req.params;
-            const { templateCode, templateName, type, modelId, partId, description } = req.body;
+            const { templateName, type, modelId, partId, description } = req.body;
 
             const existingTemplate = await prisma.checksheetTemplate.findFirst({
                 where: { id, deletedAt: null },
@@ -132,7 +135,6 @@ class ChecksheetTemplateController {
             const template = await prisma.checksheetTemplate.update({
                 where: { id },
                 data: {
-                    ...(templateCode && { templateCode }),
                     ...(templateName && { templateName }),
                     ...(type && { type }),
                     ...(modelId && { modelId }),

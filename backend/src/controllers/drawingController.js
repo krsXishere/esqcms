@@ -1,5 +1,8 @@
 const prisma = require('../config/database');
 const ResponseHelper = require('../utils/responseHelper');
+const fileUploadHelper = require('../utils/fileUploadHelper');
+const fs = require('fs');
+const path = require('path');
 
 class DrawingController {
     async getAll(req, res) {
@@ -72,14 +75,50 @@ class DrawingController {
 
     async create(req, res) {
         try {
-            const { modelId, partId, fileName, filePath, fileType, version } = req.body;
+            const { modelId, partId, version } = req.body;
+            const file = req.file;
 
-            if (!modelId || !partId || !fileName || !filePath || !fileType || !version) {
-                return ResponseHelper.badRequest(res, 'All fields are required');
+            if (!modelId || !partId || !version) {
+                return ResponseHelper.badRequest(res, 'Model ID, Part ID, and version are required');
             }
 
+            if (!file) {
+                return ResponseHelper.badRequest(res, 'Drawing file is required');
+            }
+
+            // Validate file
+            const validation = fileUploadHelper.validateImageFile(file);
+            if (!validation.isValid) {
+                return ResponseHelper.badRequest(res, validation.error);
+            }
+
+            // Get extension and generate safe filename
+            const extension = fileUploadHelper.getExtensionFromMimeType(file.mimetype);
+            const safeFileName = fileUploadHelper.generateSafeFilename(file.originalname, extension);
+
+            // Get upload directory and ensure it exists
+            const uploadDir = fileUploadHelper.getDrawingUploadDir();
+            fileUploadHelper.ensureDirectoryExists(uploadDir);
+
+            // Write file to disk
+            const filePath = path.join(uploadDir, safeFileName);
+            try {
+                fs.writeFileSync(filePath, file.buffer);
+            } catch (writeError) {
+                console.error('Error writing file to disk:', writeError);
+                return ResponseHelper.error(res, 'Failed to save drawing file');
+            }
+
+            // Create drawing record
             const drawing = await prisma.drawing.create({
-                data: { modelId, partId, fileName, filePath, fileType, version },
+                data: {
+                    modelId,
+                    partId,
+                    fileName: safeFileName,
+                    filePath: fileUploadHelper.getDrawingFileUrl(safeFileName),
+                    fileType: extension.toUpperCase(),
+                    version,
+                },
                 include: {
                     model: true,
                     part: true,
@@ -99,7 +138,8 @@ class DrawingController {
     async update(req, res) {
         try {
             const { id } = req.params;
-            const { modelId, partId, fileName, filePath, fileType, version } = req.body;
+            const { modelId, partId, version } = req.body;
+            const file = req.file;
 
             const existingDrawing = await prisma.drawing.findFirst({
                 where: { id, deletedAt: null },
@@ -109,16 +149,53 @@ class DrawingController {
                 return ResponseHelper.notFound(res, 'Drawing not found');
             }
 
+            let updateData = {};
+            if (modelId) updateData.modelId = modelId;
+            if (partId) updateData.partId = partId;
+            if (version) updateData.version = version;
+
+            // Handle file update if provided
+            if (file) {
+                const validation = fileUploadHelper.validateImageFile(file);
+                if (!validation.isValid) {
+                    return ResponseHelper.badRequest(res, validation.error);
+                }
+
+                // Delete old file
+                if (existingDrawing.fileName) {
+                    const uploadDir = fileUploadHelper.getDrawingUploadDir();
+                    const oldFileFullPath = path.join(uploadDir, existingDrawing.fileName);
+                    try {
+                        if (fs.existsSync(oldFileFullPath)) {
+                            fs.unlinkSync(oldFileFullPath);
+                        }
+                    } catch (unlinkError) {
+                        console.error('Error deleting old file:', unlinkError);
+                    }
+                }
+
+                // Save new file
+                const extension = fileUploadHelper.getExtensionFromMimeType(file.mimetype);
+                const safeFileName = fileUploadHelper.generateSafeFilename(file.originalname, extension);
+                const uploadDir = fileUploadHelper.getDrawingUploadDir();
+                fileUploadHelper.ensureDirectoryExists(uploadDir);
+                const filePath = path.join(uploadDir, safeFileName);
+
+                try {
+                    fs.writeFileSync(filePath, file.buffer);
+                } catch (writeError) {
+                    console.error('Error writing file to disk:', writeError);
+                    return ResponseHelper.error(res, 'Failed to save drawing file');
+                }
+
+                updateData.fileName = safeFileName;
+                updateData.filePath = fileUploadHelper.getDrawingFileUrl(safeFileName);
+                updateData.fileType = extension.toUpperCase();
+            }
+
             const drawing = await prisma.drawing.update({
                 where: { id },
-                data: {
-                    ...(modelId && { modelId }),
-                    ...(partId && { partId }),
-                    ...(fileName && { fileName }),
-                    ...(filePath && { filePath }),
-                    ...(fileType && { fileType }),
-                    ...(version && { version }),
-                },
+                data: updateData,
                 include: {
                     model: true,
                     part: true,
@@ -145,6 +222,19 @@ class DrawingController {
 
             if (!existingDrawing) {
                 return ResponseHelper.notFound(res, 'Drawing not found');
+            }
+
+            // Delete file from disk
+            if (existingDrawing.fileName) {
+                const uploadDir = fileUploadHelper.getDrawingUploadDir();
+                const filePath = path.join(uploadDir, existingDrawing.fileName);
+                try {
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                    }
+                } catch (unlinkError) {
+                    console.error('Error deleting file:', unlinkError);
+                }
             }
 
             await prisma.drawing.update({

@@ -3,6 +3,7 @@ const router = express.Router();
 const deliveryOrderController = require('../controllers/deliveryOrderController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { canManageMasterData } = require('../middleware/roleMiddleware');
+const { uploadDeliveryOrder } = require('../middleware/multerConfig');
 
 router.use(authMiddleware);
 
@@ -62,30 +63,53 @@ router.get('/:id', (req, res) => deliveryOrderController.getById(req, res));
  * /delivery-orders:
  *   post:
  *     summary: Create new delivery order
- *     description: Create a new delivery order (Operator only)
+ *     description: Create a new delivery order with auto-generated code and image attachment (Operator only)
  *     tags: [Delivery Orders]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/DeliveryOrderInput'
+ *             type: object
+ *             required:
+ *               - attachment
+ *             properties:
+ *               attachment:
+ *                 type: string
+ *                 format: binary
+ *                 description: Image file (JPEG, PNG, GIF, WebP) - Max 5MB
  *     responses:
  *       201:
- *         description: Delivery order created successfully
+ *         description: Delivery order created successfully with auto-generated code
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/DeliveryOrder'
+ *       400:
+ *         description: Invalid file or missing file
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.post('/', canManageMasterData, (req, res) => deliveryOrderController.create(req, res));
+router.post(
+    '/',
+    canManageMasterData,
+    uploadDeliveryOrder.single('attachment'),
+    (req, res) => deliveryOrderController.create(req, res)
+);
 
 /**
  * @swagger
  * /delivery-orders/{id}:
  *   put:
- *     summary: Update delivery order
- *     description: Update a delivery order by ID (Operator only)
+ *     summary: Update delivery order attachment
+ *     description: Update delivery order attachment/image (Operator only)
  *     tags: [Delivery Orders]
  *     security:
  *       - bearerAuth: []
@@ -98,11 +122,15 @@ router.post('/', canManageMasterData, (req, res) => deliveryOrderController.crea
  *           format: uuid
  *         description: Delivery Order ID
  *     requestBody:
- *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/DeliveryOrderInput'
+ *             type: object
+ *             properties:
+ *               attachment:
+ *                 type: string
+ *                 format: binary
+ *                 description: Image file (JPEG, PNG, GIF, WebP) - Max 5MB
  *     responses:
  *       200:
  *         description: Delivery order updated successfully
@@ -111,7 +139,12 @@ router.post('/', canManageMasterData, (req, res) => deliveryOrderController.crea
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.put('/:id', canManageMasterData, (req, res) => deliveryOrderController.update(req, res));
+router.put(
+    '/:id',
+    canManageMasterData,
+    uploadDeliveryOrder.single('attachment'),
+    (req, res) => deliveryOrderController.update(req, res)
+);
 
 /**
  * @swagger

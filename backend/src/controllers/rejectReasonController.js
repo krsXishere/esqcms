@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const ResponseHelper = require('../utils/responseHelper');
+const codeGenerator = require('../utils/codeGenerator');
 
 class RejectReasonController {
     async getAll(req, res) {
@@ -62,11 +63,13 @@ class RejectReasonController {
 
     async create(req, res) {
         try {
-            const { reasonCode, reasonName, description } = req.body;
+            const { reasonName, description } = req.body;
 
-            if (!reasonCode || !reasonName || !description) {
-                return ResponseHelper.badRequest(res, 'Reason code, name and description are required');
+            if (!reasonName || !description) {
+                return ResponseHelper.badRequest(res, 'Reason name and description are required');
             }
+
+            const reasonCode = codeGenerator.generateRejectReasonCode();
 
             const rejectReason = await prisma.rejectReason.create({
                 data: { reasonCode, reasonName, description },
@@ -85,7 +88,7 @@ class RejectReasonController {
     async update(req, res) {
         try {
             const { id } = req.params;
-            const { reasonCode, reasonName, description } = req.body;
+            const { reasonName, description } = req.body;
 
             const existingReason = await prisma.rejectReason.findFirst({
                 where: { id, deletedAt: null },
@@ -98,7 +101,6 @@ class RejectReasonController {
             const rejectReason = await prisma.rejectReason.update({
                 where: { id },
                 data: {
-                    ...(reasonCode && { reasonCode }),
                     ...(reasonName && { reasonName }),
                     ...(description && { description }),
                 },
@@ -107,9 +109,6 @@ class RejectReasonController {
             return ResponseHelper.success(res, rejectReason, 'Reject reason updated successfully');
         } catch (error) {
             console.error('Error updating reject reason:', error);
-            if (error.code === 'P2002') {
-                return ResponseHelper.badRequest(res, 'Reason code already exists');
-            }
             return ResponseHelper.error(res, 'Failed to update reject reason');
         }
     }

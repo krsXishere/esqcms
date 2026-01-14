@@ -201,9 +201,8 @@ const options = {
                 },
                 SectionInput: {
                     type: 'object',
-                    required: ['sectionCode', 'sectionName'],
+                    required: ['sectionName'],
                     properties: {
-                        sectionCode: { type: 'string', maxLength: 20 },
                         sectionName: { type: 'string', maxLength: 50 }
                     }
                 },
@@ -222,9 +221,8 @@ const options = {
                 },
                 ShiftInput: {
                     type: 'object',
-                    required: ['shiftCode', 'shiftName', 'startTime', 'endTime'],
+                    required: ['shiftName', 'startTime', 'endTime'],
                     properties: {
-                        shiftCode: { type: 'string', maxLength: 20 },
                         shiftName: { type: 'string', maxLength: 30 },
                         startTime: { type: 'string', format: 'time' },
                         endTime: { type: 'string', format: 'time' }
@@ -244,9 +242,8 @@ const options = {
                 },
                 RejectReasonInput: {
                     type: 'object',
-                    required: ['reasonCode', 'reasonName', 'description'],
+                    required: ['reasonName', 'description'],
                     properties: {
-                        reasonCode: { type: 'string', maxLength: 20 },
                         reasonName: { type: 'string', maxLength: 100 },
                         description: { type: 'string' }
                     }
@@ -423,14 +420,12 @@ const options = {
                 },
                 DrawingInput: {
                     type: 'object',
-                    required: ['modelId', 'partId', 'fileName', 'filePath', 'fileType', 'version'],
+                    required: ['modelId', 'partId', 'version', 'file'],
                     properties: {
                         modelId: { type: 'string', format: 'uuid' },
                         partId: { type: 'string', format: 'uuid' },
-                        fileName: { type: 'string', maxLength: 255 },
-                        filePath: { type: 'string' },
-                        fileType: { type: 'string', maxLength: 20 },
-                        version: { type: 'string', maxLength: 20 }
+                        version: { type: 'string', maxLength: 20 },
+                        file: { type: 'string', format: 'binary' }
                     }
                 },
 
@@ -450,9 +445,8 @@ const options = {
                 },
                 ChecksheetTemplateInput: {
                     type: 'object',
-                    required: ['templateCode', 'templateName', 'type', 'modelId', 'partId', 'description'],
+                    required: ['templateName', 'type', 'modelId', 'partId', 'description'],
                     properties: {
-                        templateCode: { type: 'string', maxLength: 20 },
                         templateName: { type: 'string', maxLength: 100 },
                         type: { $ref: '#/components/schemas/TemplateType' },
                         modelId: { type: 'string', format: 'uuid' },

@@ -3,6 +3,7 @@ const router = express.Router();
 const drawingController = require('../controllers/drawingController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { canManageMasterData } = require('../middleware/roleMiddleware');
+const { uploadDrawing } = require('../middleware/multerConfig');
 
 router.use(authMiddleware);
 
@@ -62,14 +63,14 @@ router.get('/:id', (req, res) => drawingController.getById(req, res));
  * /drawings:
  *   post:
  *     summary: Create new drawing
- *     description: Create a new drawing (Operator only)
+ *     description: Create a new drawing with file upload (Operator only)
  *     tags: [Drawings]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/DrawingInput'
  *     responses:
@@ -78,14 +79,14 @@ router.get('/:id', (req, res) => drawingController.getById(req, res));
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.post('/', canManageMasterData, (req, res) => drawingController.create(req, res));
+router.post('/', canManageMasterData, uploadDrawing.single('file'), (req, res) => drawingController.create(req, res));
 
 /**
  * @swagger
  * /drawings/{id}:
  *   put:
  *     summary: Update drawing
- *     description: Update a drawing by ID (Operator only)
+ *     description: Update a drawing by ID with optional file upload (Operator only)
  *     tags: [Drawings]
  *     security:
  *       - bearerAuth: []
@@ -100,7 +101,7 @@ router.post('/', canManageMasterData, (req, res) => drawingController.create(req
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/DrawingInput'
  *     responses:
@@ -111,7 +112,7 @@ router.post('/', canManageMasterData, (req, res) => drawingController.create(req
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.put('/:id', canManageMasterData, (req, res) => drawingController.update(req, res));
+router.put('/:id', canManageMasterData, uploadDrawing.single('file'), (req, res) => drawingController.update(req, res));
 
 /**
  * @swagger

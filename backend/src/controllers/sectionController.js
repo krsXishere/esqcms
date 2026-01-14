@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const ResponseHelper = require('../utils/responseHelper');
+const codeGenerator = require('../utils/codeGenerator');
 
 class SectionController {
     async getAll(req, res) {
@@ -62,11 +63,13 @@ class SectionController {
 
     async create(req, res) {
         try {
-            const { sectionCode, sectionName } = req.body;
+            const { sectionName } = req.body;
 
-            if (!sectionCode || !sectionName) {
-                return ResponseHelper.badRequest(res, 'Section code and name are required');
+            if (!sectionName) {
+                return ResponseHelper.badRequest(res, 'Section name is required');
             }
+
+            const sectionCode = codeGenerator.generateSectionCode();
 
             const section = await prisma.section.create({
                 data: { sectionCode, sectionName },
@@ -85,7 +88,7 @@ class SectionController {
     async update(req, res) {
         try {
             const { id } = req.params;
-            const { sectionCode, sectionName } = req.body;
+            const { sectionName } = req.body;
 
             const existingSection = await prisma.section.findFirst({
                 where: { id, deletedAt: null },
@@ -98,7 +101,6 @@ class SectionController {
             const section = await prisma.section.update({
                 where: { id },
                 data: {
-                    ...(sectionCode && { sectionCode }),
                     ...(sectionName && { sectionName }),
                 },
             });
@@ -106,9 +108,6 @@ class SectionController {
             return ResponseHelper.success(res, section, 'Section updated successfully');
         } catch (error) {
             console.error('Error updating section:', error);
-            if (error.code === 'P2002') {
-                return ResponseHelper.badRequest(res, 'Section code already exists');
-            }
             return ResponseHelper.error(res, 'Failed to update section');
         }
     }

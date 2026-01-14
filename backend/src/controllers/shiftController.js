@@ -1,5 +1,25 @@
 const prisma = require('../config/database');
 const ResponseHelper = require('../utils/responseHelper');
+const codeGenerator = require('../utils/codeGenerator');
+
+// Helper function to parse time input
+function parseTimeInput(timeString) {
+    if (!timeString) return null;
+
+    // Extract just the time part if it's an ISO string (HH:MM:SS.sssZ format)
+    let timeOnly = timeString;
+    if (timeString.includes('T')) {
+        // It's an ISO datetime string, extract the time part after T
+        timeOnly = timeString.split('T')[1];
+    }
+    if (timeString.includes('Z')) {
+        // Remove Z if present
+        timeOnly = timeOnly.replace('Z', '');
+    }
+
+    // Create a date with the time value
+    return new Date(`1970-01-01T${timeOnly}`);
+}
 
 class ShiftController {
     async getAll(req, res) {
@@ -62,22 +82,25 @@ class ShiftController {
 
     async create(req, res) {
         try {
-            const { shiftCode, shiftName, startTime, endTime } = req.body;
+            const { shiftName, startTime, endTime } = req.body;
 
-            if (!shiftCode || !shiftName || !startTime || !endTime) {
-                return ResponseHelper.badRequest(res, 'Shift code, name, start time and end time are required');
+            if (!shiftName || !startTime || !endTime) {
+                return ResponseHelper.badRequest(res, 'Shift name, start time and end time are required');
             }
+
+            // Generate auto shift code
+            const shiftCode = codeGenerator.generateShiftCode();
 
             const shift = await prisma.shift.create({
                 data: {
                     shiftCode,
                     shiftName,
-                    startTime: new Date(`1970-01-01T${startTime}:00`),
-                    endTime: new Date(`1970-01-01T${endTime}:00`),
+                    startTime: parseTimeInput(startTime),
+                    endTime: parseTimeInput(endTime),
                 },
             });
 
-            return ResponseHelper.created(res, shift, 'Shift created successfully');
+            return ResponseHelper.created(res, shift, 'Shift created successfully with auto-generated code');
         } catch (error) {
             console.error('Error creating shift:', error);
             if (error.code === 'P2002') {
@@ -90,7 +113,7 @@ class ShiftController {
     async update(req, res) {
         try {
             const { id } = req.params;
-            const { shiftCode, shiftName, startTime, endTime } = req.body;
+            const { shiftName, startTime, endTime } = req.body;
 
             const existingShift = await prisma.shift.findFirst({
                 where: { id, deletedAt: null },
@@ -103,19 +126,15 @@ class ShiftController {
             const shift = await prisma.shift.update({
                 where: { id },
                 data: {
-                    ...(shiftCode && { shiftCode }),
                     ...(shiftName && { shiftName }),
-                    ...(startTime && { startTime: new Date(`1970-01-01T${startTime}:00`) }),
-                    ...(endTime && { endTime: new Date(`1970-01-01T${endTime}:00`) }),
+                    ...(startTime && { startTime: parseTimeInput(startTime) }),
+                    ...(endTime && { endTime: parseTimeInput(endTime) }),
                 },
             });
 
             return ResponseHelper.success(res, shift, 'Shift updated successfully');
         } catch (error) {
             console.error('Error updating shift:', error);
-            if (error.code === 'P2002') {
-                return ResponseHelper.badRequest(res, 'Shift code already exists');
-            }
             return ResponseHelper.error(res, 'Failed to update shift');
         }
     }

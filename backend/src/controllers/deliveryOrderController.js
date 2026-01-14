@@ -1,5 +1,9 @@
 const prisma = require('../config/database');
 const ResponseHelper = require('../utils/responseHelper');
+const codeGenerator = require('../utils/codeGenerator');
+const fileUploadHelper = require('../utils/fileUploadHelper');
+const fs = require('fs');
+const path = require('path');
 
 class DeliveryOrderController {
     /**
@@ -67,31 +71,60 @@ class DeliveryOrderController {
     }
 
     /**
-     * Create new delivery order
+     * Create new delivery order with auto-generated code and file upload
      */
     async create(req, res) {
+        let uploadedFilePath = null;
+
         try {
-            const { deliveryOrderCode, attachment } = req.body;
-
-            if (!deliveryOrderCode) {
-                return ResponseHelper.badRequest(res, 'Delivery order code is required');
+            // Validate file upload
+            if (!req.file) {
+                return ResponseHelper.badRequest(res, 'Attachment file is required');
             }
 
-            // Check if delivery order code already exists
-            const existingOrder = await prisma.deliveryOrder.findUnique({
-                where: { deliveryOrderCode },
-            });
-
-            if (existingOrder) {
-                return ResponseHelper.badRequest(res, 'Delivery order code already exists');
+            // Validate image file
+            const validation = fileUploadHelper.validateImageFile(req.file);
+            if (!validation.isValid) {
+                return ResponseHelper.badRequest(res, validation.error);
             }
 
+            // Ensure upload directory exists
+            const uploadDir = fileUploadHelper.getDeliveryOrderUploadDir();
+            fileUploadHelper.ensureDirectoryExists(uploadDir);
+
+            // Generate safe filename
+            const extension = fileUploadHelper.getExtensionFromMimeType(req.file.mimetype);
+            const safeFilename = fileUploadHelper.generateSafeFilename(req.file.originalname, extension);
+            uploadedFilePath = path.join(uploadDir, safeFilename);
+
+            // Save file to disk
+            fs.writeFileSync(uploadedFilePath, req.file.buffer);
+
+            // Generate unique delivery order code (auto)
+            const deliveryOrderCode = codeGenerator.generateDeliveryOrderCode();
+
+            // Get public file URL
+            const fileUrl = fileUploadHelper.getDeliveryOrderFileUrl(safeFilename);
+
+            // Create delivery order in database
             const deliveryOrder = await prisma.deliveryOrder.create({
-                data: { deliveryOrderCode, attachment },
+                data: {
+                    deliveryOrderCode,
+                    attachment: fileUrl, // Store public URL
+                },
             });
 
-            return ResponseHelper.created(res, deliveryOrder, 'Delivery order created successfully');
+            return ResponseHelper.created(
+                res,
+                deliveryOrder,
+                'Delivery order created successfully with auto-generated code'
+            );
         } catch (error) {
+            // Clean up uploaded file if database operation fails
+            if (uploadedFilePath && fs.existsSync(uploadedFilePath)) {
+                fs.unlinkSync(uploadedFilePath);
+            }
+
             console.error('Error creating delivery order:', error);
             if (error.code === 'P2002') {
                 return ResponseHelper.badRequest(res, 'Delivery order code already exists');
@@ -101,12 +134,13 @@ class DeliveryOrderController {
     }
 
     /**
-     * Update delivery order
+     * Update delivery order (attachment/file only)
      */
     async update(req, res) {
+        let uploadedFilePath = null;
+
         try {
             const { id } = req.params;
-            const { deliveryOrderCode, attachment } = req.body;
 
             const existingOrder = await prisma.deliveryOrder.findFirst({
                 where: { id, deletedAt: null },
@@ -116,27 +150,54 @@ class DeliveryOrderController {
                 return ResponseHelper.notFound(res, 'Delivery order not found');
             }
 
-            // Check if new delivery order code conflicts with another order
-            if (deliveryOrderCode && deliveryOrderCode !== existingOrder.deliveryOrderCode) {
-                const conflictOrder = await prisma.deliveryOrder.findUnique({
-                    where: { deliveryOrderCode },
-                });
-                if (conflictOrder && conflictOrder.id !== id) {
-                    return ResponseHelper.badRequest(res, 'Delivery order code already exists');
+            let updateData = {};
+
+            // If file is provided, handle file upload
+            if (req.file) {
+                // Validate image file
+                const validation = fileUploadHelper.validateImageFile(req.file);
+                if (!validation.isValid) {
+                    return ResponseHelper.badRequest(res, validation.error);
                 }
+
+                // Delete old file if exists
+                if (existingOrder.attachment) {
+                    const oldFilePath = path.join(process.cwd(), existingOrder.attachment);
+                    if (fs.existsSync(oldFilePath)) {
+                        fs.unlinkSync(oldFilePath);
+                    }
+                }
+
+                // Ensure upload directory exists
+                const uploadDir = fileUploadHelper.getDeliveryOrderUploadDir();
+                fileUploadHelper.ensureDirectoryExists(uploadDir);
+
+                // Generate safe filename
+                const extension = fileUploadHelper.getExtensionFromMimeType(req.file.mimetype);
+                const safeFilename = fileUploadHelper.generateSafeFilename(req.file.originalname, extension);
+                uploadedFilePath = path.join(uploadDir, safeFilename);
+
+                // Save file to disk
+                fs.writeFileSync(uploadedFilePath, req.file.buffer);
+
+                // Get public file URL
+                const fileUrl = fileUploadHelper.getDeliveryOrderFileUrl(safeFilename);
+                updateData.attachment = fileUrl;
             }
 
             const deliveryOrder = await prisma.deliveryOrder.update({
                 where: { id },
-                data: { deliveryOrderCode, attachment },
+                data: updateData,
             });
 
             return ResponseHelper.success(res, deliveryOrder, 'Delivery order updated successfully');
         } catch (error) {
-            console.error('Error updating delivery order:', error);
-            if (error.code === 'P2002') {
-                return ResponseHelper.badRequest(res, 'Delivery order code already exists');
+            // Clean up uploaded file if database operation fails
+            if (uploadedFilePath && fs.existsSync(uploadedFilePath)) {
+                fs.unlinkSync(uploadedFilePath);
             }
+
+            console.error('Error updating delivery order:', error);
             return ResponseHelper.error(res, 'Failed to update delivery order');
         }
     }
@@ -154,6 +215,14 @@ class DeliveryOrderController {
 
             if (!existingOrder) {
                 return ResponseHelper.notFound(res, 'Delivery order not found');
+            }
+
+            // Delete attached file when deleting order
+            if (existingOrder.attachment) {
+                const filePath = path.join(process.cwd(), existingOrder.attachment);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
             }
 
             await prisma.deliveryOrder.update({
