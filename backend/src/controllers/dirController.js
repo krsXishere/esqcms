@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const ResponseHelper = require('../utils/responseHelper');
+const codeGenerator = require('../utils/codeGenerator');
 
 class DirController {
     /**
@@ -112,7 +113,6 @@ class DirController {
     async create(req, res) {
         try {
             const {
-                idDir,
                 modelId,
                 partId,
                 operatorId,
@@ -129,7 +129,7 @@ class DirController {
             } = req.body;
 
             // Validate required fields
-            if (!idDir || !modelId || !partId || !operatorId || !customerId || !deliveryOrderId || !materialId || !shiftId || !sectionId || !serialNumber) {
+            if (!modelId || !partId || !operatorId || !customerId || !deliveryOrderId || !materialId || !shiftId || !sectionId || !serialNumber) {
                 return ResponseHelper.badRequest(res, 'All required fields must be provided');
             }
 
@@ -147,6 +147,9 @@ class DirController {
             if (existingDir) {
                 return ResponseHelper.badRequest(res, 'Serial number already exists');
             }
+
+            // Auto-generate idDir
+            const idDir = codeGenerator.generateDirCode();
 
             const dir = await prisma.dir.create({
                 data: {

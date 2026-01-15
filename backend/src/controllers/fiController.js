@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const ResponseHelper = require('../utils/responseHelper');
+const codeGenerator = require('../utils/codeGenerator');
 
 class FiController {
     /**
@@ -106,7 +107,6 @@ class FiController {
     async create(req, res) {
         try {
             const {
-                idFi,
                 fiNumber,
                 modelId,
                 operatorId,
@@ -122,7 +122,7 @@ class FiController {
             } = req.body;
 
             // Validate required fields
-            if (!idFi || !fiNumber || !modelId || !operatorId || !customerId || !shiftId || !sectionId ||
+            if (!fiNumber || !modelId || !operatorId || !customerId || !shiftId || !sectionId ||
                 !customerSpecification || impellerDiameter === undefined || numericField === undefined) {
                 return ResponseHelper.badRequest(res, 'All required fields must be provided');
             }
@@ -132,6 +132,9 @@ class FiController {
             if (!validStatuses.includes(status)) {
                 return ResponseHelper.badRequest(res, 'Invalid status. Must be pending, revision, or approved');
             }
+
+            // Auto-generate idFi
+            const idFi = codeGenerator.generateFiCode();
 
             const fi = await prisma.fi.create({
                 data: {

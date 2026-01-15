@@ -102,6 +102,40 @@ class FileUploadHelper {
     getDrawingFileUrl(filename) {
         return `/uploads/drawings/${filename}`;
     }
+
+    /**
+     * Get upload directory path for user signatures
+     * @returns {string} - Directory path
+     */
+    getUserSignatureUploadDir() {
+        return path.join(process.cwd(), 'uploads', 'signatures');
+    }
+
+    /**
+     * Get public URL for user signature file
+     * @param {string} filename - Filename
+     * @returns {string} - Public URL
+     */
+    getUserSignatureFileUrl(filename) {
+        return `/uploads/signatures/${filename}`;
+    }
+
+    /**
+     * Get upload directory path for user profile pictures
+     * @returns {string} - Directory path
+     */
+    getProfilePictureUploadDir() {
+        return path.join(process.cwd(), 'uploads', 'profile-pictures');
+    }
+
+    /**
+     * Get public URL for user profile picture file
+     * @param {string} filename - Filename
+     * @returns {string} - Public URL
+     */
+    getProfilePictureFileUrl(filename) {
+        return `/uploads/profile-pictures/${filename}`;
+    }
 }
 
 module.exports = new FileUploadHelper();

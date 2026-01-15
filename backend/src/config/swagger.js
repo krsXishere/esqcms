@@ -67,6 +67,7 @@ const options = {
                         fullName: { type: 'string' },
                         email: { type: 'string', format: 'email' },
                         profilePicture: { type: 'string', nullable: true },
+                        signature: { type: 'string', nullable: true },
                         createdAt: { type: 'string', format: 'date-time' },
                         updatedAt: { type: 'string', format: 'date-time', nullable: true }
                     }
@@ -80,6 +81,32 @@ const options = {
                         email: { type: 'string', format: 'email', maxLength: 100 },
                         password: { type: 'string', minLength: 6 },
                         profilePicture: { type: 'string', nullable: true }
+                    }
+                },
+
+                UserCreateInput: {
+                    type: 'object',
+                    required: ['role', 'fullName', 'email', 'password'],
+                    properties: {
+                        role: { $ref: '#/components/schemas/Role' },
+                        fullName: { type: 'string', maxLength: 50 },
+                        email: { type: 'string', format: 'email', maxLength: 100 },
+                        password: { type: 'string', minLength: 6 },
+                        profilePicture: { type: 'string', format: 'binary', description: 'User profile picture image file (JPEG, PNG, GIF, WebP). Max 5MB.' },
+                        signature: { type: 'string', format: 'binary', description: 'User signature image file (JPEG, PNG, GIF, WebP). Max 2MB.' }
+                    }
+                },
+
+                UserUpdateInput: {
+                    type: 'object',
+                    properties: {
+                        role: { $ref: '#/components/schemas/Role' },
+                        fullName: { type: 'string', maxLength: 50 },
+                        email: { type: 'string', format: 'email', maxLength: 100 },
+                        password: { type: 'string', minLength: 6 },
+                        uploadType: { type: 'string', enum: ['profilePicture', 'signature'], description: 'Specify which file to upload: profilePicture or signature' },
+                        profilePicture: { type: 'string', format: 'binary', description: 'User profile picture image file (JPEG, PNG, GIF, WebP). Max 5MB.' },
+                        signature: { type: 'string', format: 'binary', description: 'User signature image file (JPEG, PNG, GIF, WebP). Max 2MB.' }
                     }
                 },
 
@@ -273,11 +300,11 @@ const options = {
                 },
                 DirInput: {
                     type: 'object',
-                    required: ['idDir', 'modelId', 'partId', 'customerId', 'deliveryOrderId', 'materialId', 'shiftId', 'sectionId', 'serialNumber'],
+                    required: ['modelId', 'partId', 'operatorId', 'customerId', 'deliveryOrderId', 'materialId', 'shiftId', 'sectionId', 'serialNumber'],
                     properties: {
-                        idDir: { type: 'string', maxLength: 30 },
                         modelId: { type: 'string', format: 'uuid' },
                         partId: { type: 'string', format: 'uuid' },
+                        operatorId: { type: 'string', format: 'uuid' },
                         customerId: { type: 'string', format: 'uuid' },
                         deliveryOrderId: { type: 'string', format: 'uuid' },
                         materialId: { type: 'string', format: 'uuid' },
@@ -365,11 +392,11 @@ const options = {
                 },
                 FiInput: {
                     type: 'object',
-                    required: ['idFi', 'fiNumber', 'modelId', 'customerId', 'shiftId', 'sectionId', 'customerSpecification', 'impellerDiameter', 'numericField', 'generalNote'],
+                    required: ['fiNumber', 'modelId', 'operatorId', 'customerId', 'shiftId', 'sectionId', 'customerSpecification', 'impellerDiameter', 'numericField', 'generalNote'],
                     properties: {
-                        idFi: { type: 'string', maxLength: 30 },
                         fiNumber: { type: 'string', maxLength: 20 },
                         modelId: { type: 'string', format: 'uuid' },
+                        operatorId: { type: 'string', format: 'uuid' },
                         customerId: { type: 'string', format: 'uuid' },
                         shiftId: { type: 'string', format: 'uuid' },
                         sectionId: { type: 'string', format: 'uuid' },

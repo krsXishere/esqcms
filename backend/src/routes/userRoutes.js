@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { canManageMasterData } = require('../middleware/roleMiddleware');
+const { uploadUserFiles } = require('../middleware/multerConfig');
 
 router.use(authMiddleware);
 
@@ -75,16 +76,16 @@ router.get('/:id', canManageMasterData, (req, res) => userController.getById(req
  * /users:
  *   post:
  *     summary: Create new user
- *     description: Create a new user (Operator only)
+ *     description: Create a new user (Operator only). Can include profile picture.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/UserInput'
+ *             $ref: '#/components/schemas/UserCreateInput'
  *     responses:
  *       201:
  *         description: User created successfully
@@ -102,14 +103,14 @@ router.get('/:id', canManageMasterData, (req, res) => userController.getById(req
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.post('/', canManageMasterData, (req, res) => userController.create(req, res));
+router.post('/', canManageMasterData, uploadUserFiles.any(), (req, res) => userController.create(req, res));
 
 /**
  * @swagger
  * /users/{id}:
  *   put:
  *     summary: Update user
- *     description: Update a user by ID (Operator only)
+ *     description: Update a user by ID (Operator only). Can upload profile picture or signature.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -124,9 +125,9 @@ router.post('/', canManageMasterData, (req, res) => userController.create(req, r
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/UserInput'
+ *             $ref: '#/components/schemas/UserUpdateInput'
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -135,7 +136,7 @@ router.post('/', canManageMasterData, (req, res) => userController.create(req, r
  *       403:
  *         description: Forbidden - Operator role required
  */
-router.put('/:id', canManageMasterData, (req, res) => userController.update(req, res));
+router.put('/:id', canManageMasterData, uploadUserFiles.any(), (req, res) => userController.update(req, res));
 
 /**
  * @swagger

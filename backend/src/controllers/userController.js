@@ -1,6 +1,9 @@
 const prisma = require('../config/database');
 const ResponseHelper = require('../utils/responseHelper');
 const userService = require('../services/userService');
+const fileUploadHelper = require('../utils/fileUploadHelper');
+const fs = require('fs');
+const path = require('path');
 
 class UserController {
     /**
@@ -34,6 +37,7 @@ class UserController {
                         fullName: true,
                         email: true,
                         profilePicture: true,
+                        signature: true,
                         createdAt: true,
                         updatedAt: true,
                     },
@@ -70,6 +74,7 @@ class UserController {
                     fullName: true,
                     email: true,
                     profilePicture: true,
+                    signature: true,
                     createdAt: true,
                     updatedAt: true,
                 },
@@ -91,7 +96,8 @@ class UserController {
      */
     async create(req, res) {
         try {
-            const { role, fullName, email, password, profilePicture } = req.body;
+            const { role, fullName, email, password } = req.body;
+            const files = req.files || [];
 
             // Validate required fields
             if (!role || !fullName || !email || !password) {
@@ -113,6 +119,33 @@ class UserController {
                 return ResponseHelper.badRequest(res, 'Email already exists');
             }
 
+            // Handle profile picture file upload if provided
+            let profilePictureUrl = null;
+            if (files && files.length > 0) {
+                const profilePictureFile = files.find(f => f.fieldname === 'profilePicture');
+
+                if (profilePictureFile) {
+                    const validation = fileUploadHelper.validateImageFile(profilePictureFile);
+                    if (!validation.isValid) {
+                        return ResponseHelper.badRequest(res, validation.error);
+                    }
+
+                    const extension = fileUploadHelper.getExtensionFromMimeType(profilePictureFile.mimetype);
+                    const safeFileName = fileUploadHelper.generateSafeFilename(profilePictureFile.originalname, extension);
+                    const uploadDir = fileUploadHelper.getProfilePictureUploadDir();
+                    fileUploadHelper.ensureDirectoryExists(uploadDir);
+                    const filePath = path.join(uploadDir, safeFileName);
+
+                    try {
+                        fs.writeFileSync(filePath, profilePictureFile.buffer);
+                        profilePictureUrl = fileUploadHelper.getProfilePictureFileUrl(safeFileName);
+                    } catch (writeError) {
+                        console.error('Error writing profile picture file to disk:', writeError);
+                        return ResponseHelper.error(res, 'Failed to save profile picture');
+                    }
+                }
+            }
+
             // Hash password
             const hashedPassword = await userService.hashPassword(password);
 
@@ -122,7 +155,7 @@ class UserController {
                     fullName,
                     email,
                     password: hashedPassword,
-                    profilePicture,
+                    profilePicture: profilePictureUrl,
                 },
                 select: {
                     id: true,
@@ -150,7 +183,9 @@ class UserController {
     async update(req, res) {
         try {
             const { id } = req.params;
-            const { role, fullName, email, password, profilePicture } = req.body;
+            const { role, fullName, email, password } = req.body;
+            const files = req.files || [];
+            const uploadType = req.body.uploadType;
 
             const existingUser = await prisma.user.findFirst({
                 where: { id, deletedAt: null },
@@ -183,8 +218,84 @@ class UserController {
                 ...(role && { role }),
                 ...(fullName && { fullName }),
                 ...(email && { email }),
-                ...(profilePicture !== undefined && { profilePicture }),
             };
+
+            // Handle file uploads
+            if (files && files.length > 0) {
+                // Find profile picture or signature file
+                const profilePictureFile = files.find(f => f.fieldname === 'profilePicture');
+                const signatureFile = files.find(f => f.fieldname === 'signature');
+
+                if (profilePictureFile) {
+                    const validation = fileUploadHelper.validateImageFile(profilePictureFile);
+                    if (!validation.isValid) {
+                        return ResponseHelper.badRequest(res, validation.error);
+                    }
+
+                    // Delete old profile picture if exists
+                    if (existingUser.profilePicture) {
+                        const uploadDir = fileUploadHelper.getProfilePictureUploadDir();
+                        const oldFilePath = path.join(uploadDir, path.basename(existingUser.profilePicture));
+                        try {
+                            if (fs.existsSync(oldFilePath)) {
+                                fs.unlinkSync(oldFilePath);
+                            }
+                        } catch (unlinkError) {
+                            console.error('Error deleting old profile picture:', unlinkError);
+                        }
+                    }
+
+                    // Save new profile picture
+                    const extension = fileUploadHelper.getExtensionFromMimeType(profilePictureFile.mimetype);
+                    const safeFileName = fileUploadHelper.generateSafeFilename(profilePictureFile.originalname, extension);
+                    const uploadDir = fileUploadHelper.getProfilePictureUploadDir();
+                    fileUploadHelper.ensureDirectoryExists(uploadDir);
+                    const filePath = path.join(uploadDir, safeFileName);
+
+                    try {
+                        fs.writeFileSync(filePath, profilePictureFile.buffer);
+                        updateData.profilePicture = fileUploadHelper.getProfilePictureFileUrl(safeFileName);
+                    } catch (writeError) {
+                        console.error('Error writing profile picture file to disk:', writeError);
+                        return ResponseHelper.error(res, 'Failed to save profile picture');
+                    }
+                }
+
+                if (signatureFile) {
+                    const validation = fileUploadHelper.validateImageFile(signatureFile);
+                    if (!validation.isValid) {
+                        return ResponseHelper.badRequest(res, validation.error);
+                    }
+
+                    // Delete old signature if exists
+                    if (existingUser.signature) {
+                        const uploadDir = fileUploadHelper.getUserSignatureUploadDir();
+                        const oldFilePath = path.join(uploadDir, path.basename(existingUser.signature));
+                        try {
+                            if (fs.existsSync(oldFilePath)) {
+                                fs.unlinkSync(oldFilePath);
+                            }
+                        } catch (unlinkError) {
+                            console.error('Error deleting old signature:', unlinkError);
+                        }
+                    }
+
+                    // Save new signature
+                    const extension = fileUploadHelper.getExtensionFromMimeType(signatureFile.mimetype);
+                    const safeFileName = fileUploadHelper.generateSafeFilename(signatureFile.originalname, extension);
+                    const uploadDir = fileUploadHelper.getUserSignatureUploadDir();
+                    fileUploadHelper.ensureDirectoryExists(uploadDir);
+                    const filePath = path.join(uploadDir, safeFileName);
+
+                    try {
+                        fs.writeFileSync(filePath, signatureFile.buffer);
+                        updateData.signature = fileUploadHelper.getUserSignatureFileUrl(safeFileName);
+                    } catch (writeError) {
+                        console.error('Error writing signature file to disk:', writeError);
+                        return ResponseHelper.error(res, 'Failed to save signature file');
+                    }
+                }
+            }
 
             // Hash password if provided
             if (password) {
@@ -200,6 +311,7 @@ class UserController {
                     fullName: true,
                     email: true,
                     profilePicture: true,
+                    signature: true,
                     createdAt: true,
                     updatedAt: true,
                 },

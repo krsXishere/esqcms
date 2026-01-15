@@ -49,7 +49,70 @@ const uploadDrawing = multer({
     },
 });
 
+// File filter untuk signature
+const signatureFileFilter = (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+    if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP)'), false);
+    }
+};
+
+// Multer instance untuk signature upload
+const uploadSignature = multer({
+    storage,
+    fileFilter: signatureFileFilter,
+    limits: {
+        fileSize: 2 * 1024 * 1024, // 2MB limit
+    },
+});
+
+// File filter untuk profile picture
+const profilePictureFileFilter = (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+    if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP)'), false);
+    }
+};
+
+// Multer instance untuk profile picture upload
+const uploadProfilePicture = multer({
+    storage,
+    fileFilter: profilePictureFileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+});
+
+// Combined file filter untuk user file uploads (profile picture atau signature)
+const userFileFilter = (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+    if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP)'), false);
+    }
+};
+
+// Multer instance untuk combined user file uploads
+const uploadUserFiles = multer({
+    storage,
+    fileFilter: userFileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // Use highest limit (5MB) for both
+    },
+});
+
 module.exports = {
     uploadDeliveryOrder,
     uploadDrawing,
+    uploadSignature,
+    uploadProfilePicture,
+    uploadUserFiles,
 };
