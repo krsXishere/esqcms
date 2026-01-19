@@ -19,6 +19,7 @@ enum Role {
 enum DirStatus {
     pending
     revision
+    checked
     approved
 }
 

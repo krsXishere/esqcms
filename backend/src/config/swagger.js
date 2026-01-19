@@ -34,8 +34,8 @@ const options = {
                 },
                 DirStatus: {
                     type: 'string',
-                    enum: ['pending', 'revision', 'approved'],
-                    description: 'DIR status'
+                    enum: ['pending', 'revision', 'checked', 'approved'],
+                    description: 'DIR/FI checksheet status'
                 },
                 MeasurementStatus: {
                     type: 'string',

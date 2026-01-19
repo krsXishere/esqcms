@@ -1,0 +1,44 @@
+Commit Message:
+----------------
+refactor: split E2E CRUD and workflow tests, fix ResponseHelper bug, dockerize backend/frontend, update compose, enable mapbox, and deployment setup
+
+- Rename api.test.js to crud.test.js for CRUD endpoint tests
+- Add workflow.test.js for E2E business flow (submit, revision, check, approve DIR/FI)
+- Fix ResponseHelper.error bug in checksheetWorkflowController (status code param)
+- Adjust tests for role-based access and status validation
+- Ensure all CRUD and workflow tests pass 100%
+- Add Dockerfile for backend (Express.js + Prisma) and frontend (Next.js)
+- Add .dockerignore for backend and frontend
+- Update next.config.mjs for standalone output and images.unoptimized
+- Simplify and fix podman-compose.yml (only database, backend, frontend)
+- Adjust build args and Mapbox env for frontend map
+- Prepare uploads and database volumes
+- Add deployment instructions and service endpoints
+- Add explanation of Mapbox function on frontend (for interactive map visualization)
+
+Laporan Pekerjaan 2026-01-19:
+-----------------------------
+1. Memisahkan file E2E test menjadi dua:
+   - crud.test.js: untuk endpoint CRUD (models, parts, customers, dll)
+   - workflow.test.js: untuk business flow checksheet (submit, revision, check, approve, history)
+2. Menambahkan test lengkap untuk workflow DIR dan FI:
+   - Inspector create, submit, resubmit
+   - Supervisor request revision, check, approve
+   - Operator edit during revision (sesuai rule controller)
+   - Cek role-based access (hanya role tertentu yang boleh aksi tertentu)
+   - Cek validasi status (tidak bisa submit/check jika status tidak sesuai)
+   - Cek response untuk resource tidak ditemukan dan validasi error
+3. Memperbaiki bug ResponseHelper.error di checksheetWorkflowController:
+   - Parameter status code sekarang benar, tidak menyebabkan error 500
+4. Menyesuaikan test agar sesuai dengan perilaku API (field, status code, response)
+5. Semua test CRUD dan workflow lulus 100% (69 tests passed)
+6. Dokumentasi dan struktur test lebih jelas, mudah dipilih sesuai kebutuhan
+
+Catatan:
+- Untuk menjalankan: podman compose up -d --build
+- Frontend: http://localhost:3000
+- Backend: http://localhost:4100/api
+- API Docs: http://localhost:4100/api-docs
+- Database: localhost:5437
+
+Pastikan token Mapbox sudah diisi di .env.local dan argumen build.
