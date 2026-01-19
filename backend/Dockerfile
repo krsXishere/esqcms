@@ -1,8 +1,8 @@
 # Backend Dockerfile for ESQCMS
 FROM node:20-alpine AS base
 
-# Install dependencies for bcrypt native module
-RUN apk add --no-cache python3 make g++ libc6-compat
+# Install dependencies for bcrypt native module and OpenSSL for Prisma
+RUN apk add --no-cache python3 make g++ libc6-compat openssl openssl-dev
 
 WORKDIR /app
 
