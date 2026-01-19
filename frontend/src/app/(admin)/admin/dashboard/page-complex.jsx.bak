@@ -1,0 +1,456 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Tabs,
+  Tab,
+  Button,
+  ButtonGroup,
+  Paper,
+} from "@mui/material";
+import { useRouter } from "next/navigation";
+
+// Icons
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+
+// Components
+import PageHeader from "@/components/common/PageHeader";
+import DataTable from "@/components/common/DataTable";
+import StatusBadge from "@/components/common/StatusBadge";
+import ProgressStepper from "@/components/common/ProgressStepper";
+
+import { useFetchApi } from "@/app/hook/useFetchApi";
+import { formatDateTime, getPeriodRange } from "@/lib/utils/formatDate";
+import { formatNumber, formatPercent } from "@/lib/utils/formatNumber";
+import { ENDPOINTS } from "@/lib/api/endpoints";
+
+// KPI Card Component
+const KPICard = ({ title, value, change, icon, color, trend }) => {
+  return (
+    <Card
+      sx={{
+        height: "100%",
+        border: "1px solid #E2E8F0",
+        boxShadow: "none",
+        "&:hover": {
+          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        },
+        transition: "all 0.2s",
+      }}
+    >
+      <CardContent>
+        <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body2" color="#64748B" fontWeight={500} gutterBottom>
+              {title}
+            </Typography>
+            <Typography variant="h4" fontWeight={700} color="#1E293B" sx={{ mb: 1 }}>
+              {value}
+            </Typography>
+            {change !== undefined && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                {trend === "up" ? (
+                  <TrendingUpIcon sx={{ fontSize: 16, color: "#059669" }} />
+                ) : trend === "down" ? (
+                  <TrendingDownIcon sx={{ fontSize: 16, color: "#EF4444" }} />
+                ) : null}
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: trend === "up" ? "#059669" : trend === "down" ? "#EF4444" : "#64748B",
+                    fontWeight: 600,
+                  }}
+                >
+                  {change}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              bgcolor: `${color}15`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: color,
+            }}
+          >
+            {icon}
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+const DashboardPage = () => {
+  const router = useRouter();
+  const { sendRequest, loading } = useFetchApi();
+
+  const [activeTab, setActiveTab] = useState(0);
+  const [period, setPeriod] = useState("today");
+
+  // KPI Data
+  const [kpiData, setKpiData] = useState({
+    totalToday: 0,
+    pending: 0,
+    revision: 0,
+    approved: 0,
+  });
+
+  // QC Process Table Data
+  const [qcProcesses, setQcProcesses] = useState([]);
+  const [qcPage, setQcPage] = useState(1);
+  const [qcTotal, setQcTotal] = useState(0);
+  const [qcTotalPages, setQcTotalPages] = useState(1);
+
+  // Analytics Data
+  const [analyticsData, setAnalyticsData] = useState({
+    totalQc: 0,
+    okRate: 0,
+    ngRate: 0,
+    avgCpk: 0,
+  });
+
+  // Fetch Dashboard Data
+  useEffect(() => {
+    fetchDashboardData();
+  }, [period]);
+
+  const fetchDashboardData = async () => {
+    try {
+      const range = getPeriodRange(period);
+      const params = {
+        date_from: range.start,
+        date_to: range.end,
+      };
+
+      // Fetch KPI data
+      const kpi = await sendRequest({
+        url: `${ENDPOINTS.DASHBOARD.KPI}`,
+        params,
+      });
+
+      if (kpi) {
+        setKpiData({
+          totalToday: kpi.total_today || 0,
+          pending: kpi.pending || 0,
+          revision: kpi.revision || 0,
+          approved: kpi.approved || 0,
+        });
+      }
+
+      // Fetch recent QC processes
+      const qc = await sendRequest({
+        url: `${ENDPOINTS.DASHBOARD.RECENT_QC}`,
+        params: {
+          ...params,
+          page: qcPage,
+          limit: 20,
+        },
+      });
+
+      if (qc) {
+        setQcProcesses(qc.data || []);
+        setQcTotal(qc.total || 0);
+        setQcTotalPages(qc.total_pages || 1);
+      }
+
+      // Fetch analytics
+      const analytics = await sendRequest({
+        url: `${ENDPOINTS.DASHBOARD.ANALYTICS}`,
+        params,
+      });
+
+      if (analytics) {
+        setAnalyticsData({
+          totalQc: analytics.total_qc || 0,
+          okRate: analytics.ok_rate || 0,
+          ngRate: analytics.ng_rate || 0,
+          avgCpk: analytics.avg_cpk || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    }
+  };
+
+  // QC Process Table Columns
+  const qcColumns = [
+    {
+      field: "checksheet_id",
+      headerName: "ID",
+      sortable: true,
+      width: 120,
+    },
+    {
+      field: "type",
+      headerName: "Type",
+      renderCell: (row) => <StatusBadge status={row.type} />,
+    },
+    {
+      field: "model_part",
+      headerName: "Model/Part",
+      renderCell: (row) => (
+        <Box>
+          <Typography variant="body2" fontWeight={500}>
+            {row.model_name}
+          </Typography>
+          <Typography variant="caption" color="#64748B">
+            {row.part_name}
+          </Typography>
+        </Box>
+      ),
+      minWidth: 200,
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      renderCell: (row) => <StatusBadge status={row.status} />,
+    },
+    {
+      field: "progress",
+      headerName: "Progress",
+      renderCell: (row) => <ProgressStepper currentStatus={row.status} compact />,
+      minWidth: 200,
+    },
+    {
+      field: "last_actor",
+      headerName: "Last Actor",
+      renderCell: (row) => row.last_actor_name || "-",
+    },
+    {
+      field: "updated_at",
+      headerName: "Updated At",
+      renderCell: (row) => formatDateTime(row.updated_at),
+      sortable: true,
+    },
+  ];
+
+  const handleViewQc = (row) => {
+    router.push(`/admin/checksheet/${row.type}/${row.id}`);
+  };
+
+  return (
+    <Box>
+      {/* Page Header */}
+      <PageHeader
+        title="Dashboard"
+        subtitle="Quality Control monitoring overview"
+        actions={
+          <ButtonGroup size="small" variant="outlined">
+            <Button
+              variant={period === "today" ? "contained" : "outlined"}
+              onClick={() => setPeriod("today")}
+            >
+              Today
+            </Button>
+            <Button
+              variant={period === "week" ? "contained" : "outlined"}
+              onClick={() => setPeriod("week")}
+            >
+              This Week
+            </Button>
+            <Button
+              variant={period === "month" ? "contained" : "outlined"}
+              onClick={() => setPeriod("month")}
+            >
+              This Month
+            </Button>
+          </ButtonGroup>
+        }
+      />
+
+      {/* Tabs */}
+      <Paper sx={{ mb: 3, borderRadius: 2, border: "1px solid #E2E8F0" }}>
+        <Tabs
+          value={activeTab}
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          sx={{
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: 14,
+              color: "#64748B",
+              "&.Mui-selected": {
+                color: "#2F80ED",
+              },
+            },
+          }}
+        >
+          <Tab label="Overview" />
+          <Tab label="Analytic Summary" />
+        </Tabs>
+      </Paper>
+
+      {/* Tab Content */}
+      {activeTab === 0 && (
+        <Box>
+          {/* KPI Cards */}
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="Total Checksheet Today"
+                value={formatNumber(kpiData.totalToday)}
+                icon={<AssignmentIcon />}
+                color="#2F80ED"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="Pending Review"
+                value={formatNumber(kpiData.pending)}
+                icon={<PendingActionsIcon />}
+                color="#F59E0B"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="Revision Required"
+                value={formatNumber(kpiData.revision)}
+                icon={<ErrorOutlineIcon />}
+                color="#EF4444"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="Approved"
+                value={formatNumber(kpiData.approved)}
+                icon={<CheckCircleIcon />}
+                color="#059669"
+              />
+            </Grid>
+          </Grid>
+
+          {/* QC Process Table */}
+          <Box>
+            <Typography variant="h6" fontWeight={600} color="#1E293B" sx={{ mb: 2 }}>
+              Recent QC Process
+            </Typography>
+            <DataTable
+              columns={qcColumns}
+              rows={qcProcesses}
+              page={qcPage}
+              limit={20}
+              totalRows={qcTotal}
+              totalPages={qcTotalPages}
+              onPageChange={setQcPage}
+              loading={loading}
+              onView={handleViewQc}
+              showActions={true}
+              onEdit={null}
+              onDelete={null}
+              emptyMessage="No checksheet data found"
+              emptySubMessage="Checksheets will appear here once created"
+            />
+          </Box>
+        </Box>
+      )}
+
+      {activeTab === 1 && (
+        <Box>
+          {/* Analytics KPI Cards */}
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="Total QC"
+                value={formatNumber(analyticsData.totalQc)}
+                icon={<AssignmentIcon />}
+                color="#2F80ED"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="OK Rate"
+                value={formatPercent(analyticsData.okRate)}
+                icon={<CheckCircleIcon />}
+                color="#059669"
+                trend="up"
+                change="+5.2%"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="NG Rate"
+                value={formatPercent(analyticsData.ngRate)}
+                icon={<ErrorOutlineIcon />}
+                color="#EF4444"
+                trend="down"
+                change="-2.1%"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <KPICard
+                title="Avg Cpk"
+                value={analyticsData.avgCpk?.toFixed(2) || "0.00"}
+                icon={<TrendingUpIcon />}
+                color="#8B5CF6"
+              />
+            </Grid>
+          </Grid>
+
+          {/* Analytics Charts Placeholder */}
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Card sx={{ height: 400, border: "1px solid #E2E8F0" }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    NG Trend
+                  </Typography>
+                  <Box
+                    sx={{
+                      height: 320,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: "#F8FAFC",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography color="#94A3B8">Chart will be implemented with Recharts</Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ height: 400, border: "1px solid #E2E8F0" }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    Top NG Reasons
+                  </Typography>
+                  <Box
+                    sx={{
+                      height: 320,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: "#F8FAFC",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography color="#94A3B8">Pareto chart placeholder</Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+export default DashboardPage;
