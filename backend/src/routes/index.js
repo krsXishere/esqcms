@@ -23,7 +23,6 @@ const checksheetTemplateRoutes = require('./checksheetTemplateRoutes');
 const templateItemRoutes = require('./templateItemRoutes');
 const checksheetRevisionRoutes = require('./checksheetRevisionRoutes');
 const checksheetApprovalRoutes = require('./checksheetApprovalRoutes');
-const checksheetWorkflowRoutes = require('./checksheetWorkflowRoutes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -47,9 +46,6 @@ router.use('/checksheet-templates', checksheetTemplateRoutes);
 router.use('/template-items', templateItemRoutes);
 router.use('/checksheet-revisions', checksheetRevisionRoutes);
 router.use('/checksheet-approvals', checksheetApprovalRoutes);
-
-// Checksheet workflow routes (business flow endpoints)
-router.use('/', checksheetWorkflowRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
