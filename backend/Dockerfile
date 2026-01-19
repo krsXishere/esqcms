@@ -45,5 +45,5 @@ USER expressjs
 
 EXPOSE 4100
 
-# Start the application
-CMD ["sh", "-c", "npx prisma migrate deploy && if [ \"$RUN_SEEDER\" = \"true\" ]; then node prisma/seed.js; fi && npm start"]
+# Start the application - use db push to ensure schema is applied, then migrate, then seed
+CMD ["sh", "-c", "npx prisma db push --skip-generate && npx prisma migrate deploy && if [ \"$RUN_SEEDER\" = \"true\" ]; then node prisma/seed.js; fi && npm start"]
