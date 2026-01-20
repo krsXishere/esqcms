@@ -598,6 +598,7 @@ const options = {
         },
         tags: [
             { name: 'Auth', description: 'Authentication endpoints' },
+            { name: 'Dashboard', description: 'Role-based dashboard endpoints (aggregated data)' },
             { name: 'Users', description: 'User management (Operator only)' },
             { name: 'Types', description: 'Type master data' },
             { name: 'Models', description: 'Model master data' },
