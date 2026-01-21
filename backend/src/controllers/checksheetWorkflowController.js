@@ -299,13 +299,13 @@ class ChecksheetWorkflowController {
 
             // Extract editable fields from body
             const {
-                serialNumber,
+                drawingNo,
                 recommendation,
                 generalNote,
                 modelId,
                 partId,
                 customerId,
-                deliveryOrderId,
+                deliveryOrderCode,
                 materialId,
                 shiftId,
                 sectionId,
@@ -314,13 +314,13 @@ class ChecksheetWorkflowController {
 
             // Build update data
             const updateData = {};
-            if (serialNumber !== undefined) updateData.serialNumber = serialNumber;
+            if (drawingNo !== undefined) updateData.drawingNo = drawingNo;
             if (recommendation !== undefined) updateData.recommendation = recommendation;
             if (generalNote !== undefined) updateData.generalNote = generalNote;
             if (modelId !== undefined) updateData.modelId = modelId;
             if (partId !== undefined) updateData.partId = partId;
             if (customerId !== undefined) updateData.customerId = customerId;
-            if (deliveryOrderId !== undefined) updateData.deliveryOrderId = deliveryOrderId;
+            if (deliveryOrderCode !== undefined) updateData.deliveryOrderCode = deliveryOrderCode;
             if (materialId !== undefined) updateData.materialId = materialId;
             if (shiftId !== undefined) updateData.shiftId = shiftId;
             if (sectionId !== undefined) updateData.sectionId = sectionId;
@@ -333,7 +333,7 @@ class ChecksheetWorkflowController {
                 select: {
                     id: true,
                     idDir: true,
-                    serialNumber: true,
+                    drawingNo: true,
                     status: true,
                     recommendation: true,
                     generalNote: true,
@@ -345,7 +345,7 @@ class ChecksheetWorkflowController {
         } catch (error) {
             console.error('Error editing DIR during revision:', error);
             if (error.code === 'P2002') {
-                return ResponseHelper.badRequest(res, 'Serial number already exists');
+                return ResponseHelper.badRequest(res, 'Drawing No already exists');
             }
             return ResponseHelper.error(res, 'Failed to edit DIR during revision');
         }
@@ -815,7 +815,6 @@ class ChecksheetWorkflowController {
                     part: { select: { id: true, partNumber: true, partName: true } },
                     operator: { select: { id: true, fullName: true, email: true, role: true } },
                     customer: { select: { id: true, customerName: true } },
-                    deliveryOrder: { select: { id: true, deliveryOrderCode: true } },
                     material: { select: { id: true, materialName: true } },
                     shift: { select: { id: true, shiftName: true } },
                     section: { select: { id: true, sectionName: true } },

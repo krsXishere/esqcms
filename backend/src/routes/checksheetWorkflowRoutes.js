@@ -448,7 +448,7 @@ router.get('/fis/:id/history', (req, res) => checksheetWorkflowController.getFiH
  *           schema:
  *             type: object
  *             properties:
- *               serialNumber:
+ *               drawingNo:
  *                 type: string
  *               recommendation:
  *                 type: string
@@ -463,9 +463,8 @@ router.get('/fis/:id/history', (req, res) => checksheetWorkflowController.getFiH
  *               customerId:
  *                 type: string
  *                 format: uuid
- *               deliveryOrderId:
+ *               deliveryOrderCode:
  *                 type: string
- *                 format: uuid
  *               materialId:
  *                 type: string
  *                 format: uuid

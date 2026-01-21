@@ -64,7 +64,7 @@ class DashboardController {
                         id: true,
                         idDir: true,
                         status: true,
-                        serialNumber: true,
+                        drawingNo: true,
                         createdAt: true,
                         updatedAt: true,
                         model: { select: { modelName: true } },
@@ -117,7 +117,7 @@ class DashboardController {
                         code: d.idDir,
                         type: 'DIR',
                         status: d.status,
-                        serialNumber: d.serialNumber,
+                        drawingNo: d.drawingNo,
                         model: d.model?.modelName,
                         part: d.part?.partName,
                         createdAt: d.createdAt,
@@ -192,7 +192,7 @@ class DashboardController {
                         id: true,
                         idDir: true,
                         status: true,
-                        serialNumber: true,
+                        drawingNo: true,
                         createdAt: true,
                         updatedAt: true,
                         model: { select: { modelName: true } },
@@ -247,7 +247,7 @@ class DashboardController {
                         code: d.idDir,
                         type: 'DIR',
                         status: d.status,
-                        serialNumber: d.serialNumber,
+                        drawingNo: d.drawingNo,
                         model: d.model?.modelName,
                         part: d.part?.partName,
                         inspector: d.operator?.fullName,
@@ -320,13 +320,13 @@ class DashboardController {
                 prisma.fi.count({ where: { status: 'checked', deletedAt: null } }),
                 prisma.fi.count({ where: { status: 'approved', deletedAt: null } }),
                 prisma.measurement.count({ where: { deletedAt: null } }),
-                prisma.measurement.count({ where: { status: 'ng', deletedAt: null } }),
+                prisma.measurement.count({ where: { status: { in: ['repair', 'reject'] }, deletedAt: null } }),
                 prisma.visualInspection.count({ where: { deletedAt: null } }),
                 prisma.visualInspection.count({ where: { status: 'after_repair', deletedAt: null } }),
-                // Group NG by dimensional
+                // Group NG (repair/reject) by dimensional
                 prisma.measurement.groupBy({
                     by: ['dimensional'],
-                    where: { status: 'ng', deletedAt: null },
+                    where: { status: { in: ['repair', 'reject'] }, deletedAt: null },
                     _count: { id: true },
                     orderBy: { _count: { id: 'desc' } },
                     take: 5,
@@ -340,7 +340,7 @@ class DashboardController {
                         id: true,
                         idDir: true,
                         status: true,
-                        serialNumber: true,
+                        drawingNo: true,
                         updatedAt: true,
                         model: { select: { modelName: true } },
                         part: { select: { partName: true } },
@@ -396,7 +396,7 @@ class DashboardController {
                         code: d.idDir,
                         type: 'DIR',
                         status: d.status,
-                        serialNumber: d.serialNumber,
+                        drawingNo: d.drawingNo,
                         model: d.model?.modelName,
                         part: d.part?.partName,
                         updatedAt: d.updatedAt,
@@ -463,7 +463,7 @@ class DashboardController {
                 recentApprovals,
                 // Recent revisions
                 recentRevisions,
-                // DIRs with most NG measurements
+                // DIRs with most NG (repair/reject) measurements
                 dirsWithNg,
             ] = await Promise.all([
                 prisma.dir.count({ where: { deletedAt: null } }),
@@ -471,7 +471,7 @@ class DashboardController {
                 prisma.dir.count({ where: { status: 'pending', deletedAt: null } }),
                 prisma.fi.count({ where: { status: 'pending', deletedAt: null } }),
                 prisma.measurement.count({ where: { deletedAt: null } }),
-                prisma.measurement.count({ where: { status: 'ng', deletedAt: null } }),
+                prisma.measurement.count({ where: { status: { in: ['repair', 'reject'] }, deletedAt: null } }),
                 prisma.visualInspection.count({ where: { deletedAt: null } }),
                 prisma.visualInspection.count({ where: { status: 'after_repair', deletedAt: null } }),
                 // NG by model
@@ -480,7 +480,7 @@ class DashboardController {
                     FROM measurements ms
                     JOIN dirs d ON ms.dir_id = d.id
                     JOIN models m ON d.model_id = m.id
-                    WHERE ms.status = 'ng' AND ms.deleted_at IS NULL
+                    WHERE ms.status IN ('repair', 'reject') AND ms.deleted_at IS NULL
                     GROUP BY m.id, m.model_name
                     ORDER BY ng_count DESC
                     LIMIT 5
@@ -488,7 +488,7 @@ class DashboardController {
                 // Top NG items by dimensional
                 prisma.measurement.groupBy({
                     by: ['dimensional'],
-                    where: { status: 'ng', deletedAt: null },
+                    where: { status: { in: ['repair', 'reject'] }, deletedAt: null },
                     _count: { id: true },
                     orderBy: { _count: { id: 'desc' } },
                     take: 5,
@@ -528,11 +528,11 @@ class DashboardController {
                         revisedByUser: { select: { fullName: true } },
                     },
                 }),
-                // DIRs with NG
+                // DIRs with NG (repair/reject)
                 prisma.dir.findMany({
                     where: {
                         deletedAt: null,
-                        measurements: { some: { status: 'ng', deletedAt: null } },
+                        measurements: { some: { status: { in: ['repair', 'reject'] }, deletedAt: null } },
                     },
                     take: 5,
                     orderBy: { updatedAt: 'desc' },
@@ -541,7 +541,7 @@ class DashboardController {
                         idDir: true,
                         status: true,
                         model: { select: { modelName: true } },
-                        _count: { select: { measurements: { where: { status: 'ng' } } } },
+                        _count: { select: { measurements: { where: { status: { in: ['repair', 'reject'] } } } } },
                     },
                 }),
             ]);

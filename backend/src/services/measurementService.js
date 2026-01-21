@@ -7,7 +7,7 @@ class MeasurementService {
      * @param {number} actual - Actual measurement value
      * @param {number} toleranceMin - Minimum tolerance value
      * @param {number} toleranceMax - Maximum tolerance value
-     * @returns {string} - 'ok' if within tolerance, 'ng' if outside
+     * @returns {string} - 'accepted' if within tolerance, 'reject' if outside
      */
     calculateStatus(actual, toleranceMin, toleranceMax) {
         const actualValue = parseFloat(actual);
@@ -15,29 +15,31 @@ class MeasurementService {
         const maxValue = parseFloat(toleranceMax);
 
         if (actualValue >= minValue && actualValue <= maxValue) {
-            return 'ok';
+            return 'accepted';
         }
-        return 'ng';
+        return 'reject';
     }
 
     /**
      * Calculate pass rate for a set of measurements
      * @param {Array} measurements - Array of measurement objects
-     * @returns {object} - Statistics including passRate, okCount, ngCount
+     * @returns {object} - Statistics including passRate, acceptedCount, ngCount
      */
     calculatePassRate(measurements) {
         if (!measurements || measurements.length === 0) {
-            return { passRate: 0, okCount: 0, ngCount: 0, total: 0 };
+            return { passRate: 0, acceptedCount: 0, ngCount: 0, total: 0 };
         }
 
-        const okCount = measurements.filter(m => m.status === 'ok').length;
-        const ngCount = measurements.filter(m => m.status === 'ng').length;
+        // Accepted statuses: 'accepted', 'use_as_is'
+        // NG statuses: 'repair', 'reject'
+        const acceptedCount = measurements.filter(m => m.status === 'accepted' || m.status === 'use_as_is').length;
+        const ngCount = measurements.filter(m => m.status === 'repair' || m.status === 'reject').length;
         const total = measurements.length;
-        const passRate = (okCount / total) * 100;
+        const passRate = (acceptedCount / total) * 100;
 
         return {
             passRate: Math.round(passRate * 100) / 100,
-            okCount,
+            acceptedCount,
             ngCount,
             total,
         };

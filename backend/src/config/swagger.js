@@ -39,7 +39,7 @@ const options = {
                 },
                 MeasurementStatus: {
                     type: 'string',
-                    enum: ['ok', 'ng'],
+                    enum: ['accepted', 'use_as_is', 'repair', 'reject'],
                     description: 'Measurement status'
                 },
                 VisualInspectionStatus: {
@@ -285,12 +285,12 @@ const options = {
                         partId: { type: 'string', format: 'uuid' },
                         operatorId: { type: 'string', format: 'uuid' },
                         customerId: { type: 'string', format: 'uuid' },
-                        deliveryOrderId: { type: 'string', format: 'uuid' },
+                        deliveryOrderCode: { type: 'string', description: 'Delivery order code (manual input)' },
                         materialId: { type: 'string', format: 'uuid' },
                         shiftId: { type: 'string', format: 'uuid' },
                         sectionId: { type: 'string', format: 'uuid' },
                         checksheetTemplateId: { type: 'string', format: 'uuid', nullable: true },
-                        serialNumber: { type: 'string' },
+                        drawingNo: { type: 'string', description: 'Drawing number' },
                         recommendation: { type: 'string', nullable: true },
                         generalNote: { type: 'string', nullable: true },
                         status: { $ref: '#/components/schemas/DirStatus' },
@@ -300,18 +300,18 @@ const options = {
                 },
                 DirInput: {
                     type: 'object',
-                    required: ['modelId', 'partId', 'operatorId', 'customerId', 'deliveryOrderId', 'materialId', 'shiftId', 'sectionId', 'serialNumber'],
+                    required: ['modelId', 'partId', 'operatorId', 'customerId', 'deliveryOrderCode', 'materialId', 'shiftId', 'sectionId', 'drawingNo'],
                     properties: {
                         modelId: { type: 'string', format: 'uuid' },
                         partId: { type: 'string', format: 'uuid' },
                         operatorId: { type: 'string', format: 'uuid' },
                         customerId: { type: 'string', format: 'uuid' },
-                        deliveryOrderId: { type: 'string', format: 'uuid' },
+                        deliveryOrderCode: { type: 'string', maxLength: 50, description: 'Delivery order code (manual input)' },
                         materialId: { type: 'string', format: 'uuid' },
                         shiftId: { type: 'string', format: 'uuid' },
                         sectionId: { type: 'string', format: 'uuid' },
                         checksheetTemplateId: { type: 'string', format: 'uuid', nullable: true },
-                        serialNumber: { type: 'string', maxLength: 20 },
+                        drawingNo: { type: 'string', maxLength: 30, description: 'Drawing number' },
                         recommendation: { type: 'string', nullable: true },
                         generalNote: { type: 'string', nullable: true }
                     }

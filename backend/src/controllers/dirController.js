@@ -16,7 +16,7 @@ class DirController {
                 ...(search && {
                     OR: [
                         { idDir: { contains: search, mode: 'insensitive' } },
-                        { serialNumber: { contains: search, mode: 'insensitive' } },
+                        { drawingNo: { contains: search, mode: 'insensitive' } },
                     ],
                 }),
                 ...(status && { status }),
@@ -40,7 +40,6 @@ class DirController {
                             },
                         },
                         customer: true,
-                        deliveryOrder: true,
                         material: true,
                         shift: true,
                         section: true,
@@ -85,7 +84,6 @@ class DirController {
                         },
                     },
                     customer: true,
-                    deliveryOrder: true,
                     material: true,
                     shift: true,
                     section: true,
@@ -117,19 +115,19 @@ class DirController {
                 partId,
                 operatorId,
                 customerId,
-                deliveryOrderId,
+                deliveryOrderCode,
                 materialId,
                 shiftId,
                 sectionId,
                 checksheetTemplateId,
-                serialNumber,
+                drawingNo,
                 recommendation,
                 generalNote,
                 status = 'pending',
             } = req.body;
 
             // Validate required fields
-            if (!modelId || !partId || !operatorId || !customerId || !deliveryOrderId || !materialId || !shiftId || !sectionId || !serialNumber) {
+            if (!modelId || !partId || !operatorId || !customerId || !deliveryOrderCode || !materialId || !shiftId || !sectionId || !drawingNo) {
                 return ResponseHelper.badRequest(res, 'All required fields must be provided');
             }
 
@@ -139,13 +137,13 @@ class DirController {
                 return ResponseHelper.badRequest(res, 'Invalid status. Must be pending, revision, or approved');
             }
 
-            // Check if serial number already exists
+            // Check if drawing no already exists
             const existingDir = await prisma.dir.findUnique({
-                where: { serialNumber },
+                where: { drawingNo },
             });
 
             if (existingDir) {
-                return ResponseHelper.badRequest(res, 'Serial number already exists');
+                return ResponseHelper.badRequest(res, 'Drawing No already exists');
             }
 
             // Auto-generate idDir
@@ -158,12 +156,12 @@ class DirController {
                     partId,
                     operatorId,
                     customerId,
-                    deliveryOrderId,
+                    deliveryOrderCode,
                     materialId,
                     shiftId,
                     sectionId,
                     checksheetTemplateId,
-                    serialNumber,
+                    drawingNo,
                     recommendation,
                     generalNote,
                     status,
@@ -180,7 +178,6 @@ class DirController {
                         },
                     },
                     customer: true,
-                    deliveryOrder: true,
                     material: true,
                     shift: true,
                     section: true,
@@ -192,7 +189,7 @@ class DirController {
         } catch (error) {
             console.error('Error creating dir:', error);
             if (error.code === 'P2002') {
-                return ResponseHelper.badRequest(res, 'Serial number already exists');
+                return ResponseHelper.badRequest(res, 'Drawing No already exists');
             }
             if (error.code === 'P2003') {
                 return ResponseHelper.badRequest(res, 'Invalid foreign key reference');
@@ -213,12 +210,12 @@ class DirController {
                 partId,
                 operatorId,
                 customerId,
-                deliveryOrderId,
+                deliveryOrderCode,
                 materialId,
                 shiftId,
                 sectionId,
                 checksheetTemplateId,
-                serialNumber,
+                drawingNo,
                 recommendation,
                 generalNote,
                 status,
@@ -240,13 +237,13 @@ class DirController {
                 }
             }
 
-            // Check if new serial number conflicts
-            if (serialNumber && serialNumber !== existingDir.serialNumber) {
+            // Check if new drawing no conflicts
+            if (drawingNo && drawingNo !== existingDir.drawingNo) {
                 const conflictDir = await prisma.dir.findUnique({
-                    where: { serialNumber },
+                    where: { drawingNo },
                 });
                 if (conflictDir && conflictDir.id !== id) {
-                    return ResponseHelper.badRequest(res, 'Serial number already exists');
+                    return ResponseHelper.badRequest(res, 'Drawing No already exists');
                 }
             }
 
@@ -258,12 +255,12 @@ class DirController {
                     ...(partId && { partId }),
                     ...(operatorId && { operatorId }),
                     ...(customerId && { customerId }),
-                    ...(deliveryOrderId && { deliveryOrderId }),
+                    ...(deliveryOrderCode && { deliveryOrderCode }),
                     ...(materialId && { materialId }),
                     ...(shiftId && { shiftId }),
                     ...(sectionId && { sectionId }),
                     ...(checksheetTemplateId !== undefined && { checksheetTemplateId }),
-                    ...(serialNumber && { serialNumber }),
+                    ...(drawingNo && { drawingNo }),
                     ...(recommendation !== undefined && { recommendation }),
                     ...(generalNote !== undefined && { generalNote }),
                     ...(status && { status }),
@@ -280,7 +277,6 @@ class DirController {
                         },
                     },
                     customer: true,
-                    deliveryOrder: true,
                     material: true,
                     shift: true,
                     section: true,
@@ -292,7 +288,7 @@ class DirController {
         } catch (error) {
             console.error('Error updating dir:', error);
             if (error.code === 'P2002') {
-                return ResponseHelper.badRequest(res, 'Serial number already exists');
+                return ResponseHelper.badRequest(res, 'Drawing No already exists');
             }
             if (error.code === 'P2003') {
                 return ResponseHelper.badRequest(res, 'Invalid foreign key reference');

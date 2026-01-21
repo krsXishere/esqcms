@@ -32,7 +32,6 @@ describe('ESQCMS Checksheet Workflow Tests', () => {
     let testShiftId = '';
     let testSectionId = '';
     let testTemplateId = '';
-    let testDeliveryOrderId = '';
     let testMaterialId = '';
     let inspectorUserId = '';
 
@@ -156,15 +155,6 @@ describe('ESQCMS Checksheet Workflow Tests', () => {
             testTemplateId = templatesRes.body.data[0].id;
         }
 
-        // Get existing delivery order
-        const deliveryOrdersRes = await request(app)
-            .get('/api/delivery-orders')
-            .set('Authorization', `Bearer ${operatorToken}`);
-
-        if (deliveryOrdersRes.body.data?.length > 0) {
-            testDeliveryOrderId = deliveryOrdersRes.body.data[0].id;
-        }
-
         // Get existing material
         const materialsRes = await request(app)
             .get('/api/materials')
@@ -182,7 +172,6 @@ describe('ESQCMS Checksheet Workflow Tests', () => {
             shiftId: testShiftId ? '✓' : '✗',
             sectionId: testSectionId ? '✓' : '✗',
             templateId: testTemplateId ? '✓' : '✗',
-            deliveryOrderId: testDeliveryOrderId ? '✓' : '✗',
             materialId: testMaterialId ? '✓' : '✗',
         });
     }
@@ -233,7 +222,7 @@ describe('ESQCMS Checksheet Workflow Tests', () => {
 
         // Step 1: Inspector creates DIR
         it('POST /api/dirs - Inspector creates new DIR (status: pending)', async () => {
-            if (!testModelId || !testPartId || !testCustomerId || !testDeliveryOrderId || !testMaterialId) {
+            if (!testModelId || !testPartId || !testCustomerId || !testMaterialId) {
                 console.warn('Skipping: Missing required test data');
                 return;
             }
@@ -246,12 +235,12 @@ describe('ESQCMS Checksheet Workflow Tests', () => {
                     partId: testPartId,
                     operatorId: inspectorUserId,
                     customerId: testCustomerId,
-                    deliveryOrderId: testDeliveryOrderId,
+                    deliveryOrderCode: `DO-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
                     materialId: testMaterialId,
                     shiftId: testShiftId,
                     sectionId: testSectionId,
                     checksheetTemplateId: testTemplateId,
-                    serialNumber: `SN-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+                    drawingNo: `DRW-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
                     generalNote: 'Created by workflow test',
                 });
 

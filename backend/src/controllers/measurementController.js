@@ -28,7 +28,7 @@ class MeasurementController {
                             select: {
                                 id: true,
                                 idDir: true,
-                                serialNumber: true,
+                                drawingNo: true,
                             },
                         },
                     },
@@ -83,7 +83,7 @@ class MeasurementController {
                         select: {
                             id: true,
                             idDir: true,
-                            serialNumber: true,
+                            drawingNo: true,
                         },
                     },
                 },
@@ -147,7 +147,7 @@ class MeasurementController {
                         select: {
                             id: true,
                             idDir: true,
-                            serialNumber: true,
+                            drawingNo: true,
                         },
                     },
                 },
@@ -248,7 +248,7 @@ class MeasurementController {
                         select: {
                             id: true,
                             idDir: true,
-                            serialNumber: true,
+                            drawingNo: true,
                         },
                     },
                 },

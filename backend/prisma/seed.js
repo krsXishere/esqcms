@@ -266,12 +266,12 @@ async function main() {
             partId: part.id,
             operatorId: inspector.id, // Inspector creates the DIR
             customerId: customer.id,
-            deliveryOrderId: deliveryOrder.id,
+            deliveryOrderCode: 'DO-2026-001',
             materialId: material.id,
             shiftId: shiftDay.id,
             sectionId: section.id,
             checksheetTemplateId: dirTemplate.id,
-            serialNumber: 'SN-2026-001',
+            drawingNo: 'DRW-2026-001',
             recommendation: null,
             generalNote: 'Initial dimensional inspection',
             status: 'pending', // Initial status
@@ -279,10 +279,10 @@ async function main() {
     });
     console.log(`   ✓ DIR created: ${dir.idDir} (Status: ${dir.status})`);
 
-    // Create 3 Measurements (2 OK, 1 NG)
+    // Create 3 Measurements (2 accepted, 1 reject)
     console.log('   📏 Creating measurements...');
 
-    // Measurement 1: OK
+    // Measurement 1: Accepted
     const measurement1 = await prisma.measurement.create({
         data: {
             dirId: dir.id,
@@ -291,12 +291,12 @@ async function main() {
             toleranceMin: -0.05,
             toleranceMax: 0.05,
             actual: 100.02, // Within tolerance
-            status: 'ok',
+            status: 'accepted',
         },
     });
     console.log(`      ✓ Measurement 1: Nominal ${measurement1.nominal}, Actual ${measurement1.actual} - ${measurement1.status.toUpperCase()}`);
 
-    // Measurement 2: OK
+    // Measurement 2: Accepted
     const measurement2 = await prisma.measurement.create({
         data: {
             dirId: dir.id,
@@ -305,12 +305,12 @@ async function main() {
             toleranceMin: -0.03,
             toleranceMax: 0.03,
             actual: 49.98, // Within tolerance
-            status: 'ok',
+            status: 'accepted',
         },
     });
     console.log(`      ✓ Measurement 2: Nominal ${measurement2.nominal}, Actual ${measurement2.actual} - ${measurement2.status.toUpperCase()}`);
 
-    // Measurement 3: NG (Out of tolerance)
+    // Measurement 3: Reject (Out of tolerance)
     const measurement3 = await prisma.measurement.create({
         data: {
             dirId: dir.id,
@@ -319,7 +319,7 @@ async function main() {
             toleranceMin: -0.02,
             toleranceMax: 0.02,
             actual: 25.10, // Out of tolerance!
-            status: 'ng',
+            status: 'reject',
         },
     });
     console.log(`      ✓ Measurement 3: Nominal ${measurement3.nominal}, Actual ${measurement3.actual} - ${measurement3.status.toUpperCase()} ⚠️`);

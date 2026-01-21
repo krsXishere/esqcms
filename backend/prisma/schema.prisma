@@ -24,8 +24,10 @@ enum DirStatus {
 }
 
 enum MeasurementStatus {
-    ok
-    ng
+    accepted
+    use_as_is @map("use-as-is")
+    repair
+    reject
 }
 
 enum VisualInspectionStatus {
@@ -142,8 +144,7 @@ model DeliveryOrder {
     updatedAt         DateTime? @updatedAt @map("updated_at")
     deletedAt         DateTime? @map("deleted_at")
 
-    // Relations
-    dirs Dir[]
+    // Note: No longer related to Dir - deliveryOrderCode is now manual input in Dir
 
     @@map("delivery_orders")
 }
@@ -202,12 +203,12 @@ model Dir {
     partId               String    @map("part_id") @db.Uuid
     operatorId           String    @map("operator_id") @db.Uuid
     customerId           String    @map("customer_id") @db.Uuid
-    deliveryOrderId      String    @map("delivery_order_id") @db.Uuid
+    deliveryOrderCode    String    @map("delivery_order_code") @db.VarChar(50)
     materialId           String    @map("material_id") @db.Uuid
     shiftId              String    @map("shift_id") @db.Uuid
     sectionId            String    @map("section_id") @db.Uuid
     checksheetTemplateId String?   @map("checksheet_template_id") @db.Uuid
-    serialNumber         String    @unique @map("serial_number") @db.VarChar(20)
+    drawingNo            String    @unique @map("drawing_no") @db.VarChar(30)
     recommendation       String?   @db.Text
     generalNote          String?   @map("general_note") @db.Text
     status               DirStatus @default(pending)
@@ -220,7 +221,6 @@ model Dir {
     part               Part                @relation(fields: [partId], references: [id])
     operator           User                @relation(fields: [operatorId], references: [id])
     customer           Customer            @relation(fields: [customerId], references: [id])
-    deliveryOrder      DeliveryOrder       @relation(fields: [deliveryOrderId], references: [id])
     material           Material            @relation(fields: [materialId], references: [id])
     shift              Shift               @relation(fields: [shiftId], references: [id])
     section            Section             @relation(fields: [sectionId], references: [id])
@@ -238,7 +238,7 @@ model Measurement {
     toleranceMin Float             @map("tolerance_min")
     toleranceMax Float             @map("tolerance_max")
     actual       Float
-    status       MeasurementStatus @default(ok)
+    status       MeasurementStatus @default(accepted)
     createdAt    DateTime          @default(now()) @map("created_at")
     updatedAt    DateTime?         @updatedAt @map("updated_at")
     deletedAt    DateTime?         @map("deleted_at")

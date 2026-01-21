@@ -18,7 +18,6 @@ describe('ESQCMS API E2E Tests', () => {
     let testSectionId = '';
     let testShiftId = '';
     let testRejectReasonId = '';
-    let testDeliveryOrderId = '';
 
     // ========================================
     // SETUP - Login before all tests
