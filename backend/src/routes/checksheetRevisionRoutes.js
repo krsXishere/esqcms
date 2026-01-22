@@ -8,6 +8,168 @@ router.use(authMiddleware);
 
 /**
  * @swagger
+ * /checksheet-revisions/current:
+ *   get:
+ *     summary: Get current revisions
+ *     description: Get all DIRs/FIs currently in revision status with filter options
+ *     tags: [Checksheet Revisions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by checksheet number or drawing number
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [high, medium, low]
+ *         description: Filter by priority
+ *       - in: query
+ *         name: inspector
+ *         schema:
+ *           type: string
+ *         description: Filter by inspector name
+ *       - in: query
+ *         name: requestedBy
+ *         schema:
+ *           type: string
+ *         description: Filter by who requested the revision
+ *       - in: query
+ *         name: referenceType
+ *         schema:
+ *           type: string
+ *           enum: [dir, fi]
+ *         description: Filter by checksheet type
+ *     responses:
+ *       200:
+ *         description: Current revisions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       no:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                       model:
+ *                         type: string
+ *                       inspector:
+ *                         type: string
+ *                       reason:
+ *                         type: string
+ *                       requestedBy:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                       date:
+ *                         type: string
+ *                       priority:
+ *                         type: string
+ *                 pagination:
+ *                   type: object
+ */
+router.get('/current', (req, res) => checksheetRevisionController.getCurrentRevisions(req, res));
+
+/**
+ * @swagger
+ * /checksheet-revisions/history:
+ *   get:
+ *     summary: Get revision history
+ *     description: Get history of completed revisions (approved/checked checksheets)
+ *     tags: [Checksheet Revisions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by checksheet number, model, or inspector
+ *       - in: query
+ *         name: referenceType
+ *         schema:
+ *           type: string
+ *           enum: [dir, fi]
+ *         description: Filter by checksheet type
+ *     responses:
+ *       200:
+ *         description: Revision history retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       no:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                       model:
+ *                         type: string
+ *                       inspector:
+ *                         type: string
+ *                       reason:
+ *                         type: string
+ *                       requestedBy:
+ *                         type: string
+ *                       revisedAt:
+ *                         type: string
+ *                       completedAt:
+ *                         type: string
+ *                       duration:
+ *                         type: string
+ *                 pagination:
+ *                   type: object
+ */
+router.get('/history', (req, res) => checksheetRevisionController.getRevisionHistory(req, res));
+
+/**
+ * @swagger
  * /checksheet-revisions:
  *   get:
  *     summary: Get all checksheet revisions

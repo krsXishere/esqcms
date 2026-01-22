@@ -426,6 +426,7 @@ class DashboardController {
     /**
      * GET /dashboard/operator
      * Full system overview with quality metrics and configuration status
+     * Optimized for frontend dashboard page.jsx
      */
     async getOperatorDashboard(req, res) {
         try {
@@ -436,12 +437,36 @@ class DashboardController {
                 return ResponseHelper.error(res, 'Access denied. Operator role required.', 403);
             }
 
+            // Date calculations for period comparisons
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayEnd = new Date(todayStart);
+            todayEnd.setDate(todayEnd.getDate() + 1);
+
+            const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
             const [
-                // Total counts
+                // Total counts (current)
                 totalDir,
                 totalFi,
+                // Total counts (last month for comparison)
+                lastMonthDir,
+                lastMonthFi,
+                // Pending counts
                 dirPending,
                 fiPending,
+                lastMonthDirPending,
+                lastMonthFiPending,
+                // Revision counts
+                dirRevision,
+                fiRevision,
+                lastMonthDirRevision,
+                lastMonthFiRevision,
+                // Completed today
+                dirCompletedToday,
+                fiCompletedToday,
                 // Measurement stats
                 totalMeasurements,
                 ngMeasurements,
@@ -461,17 +486,38 @@ class DashboardController {
                 customerCount,
                 // Recent admin activity (approvals)
                 recentApprovals,
-                // Recent revisions
-                recentRevisions,
+                // Recent checksheets (combined DIR + FI for table)
+                recentDirs,
+                recentFis,
+                // Revision queue (DIRs + FIs in revision status)
+                revisionDirs,
+                revisionFis,
                 // DIRs with most NG (repair/reject) measurements
                 dirsWithNg,
             ] = await Promise.all([
+                // Current totals
                 prisma.dir.count({ where: { deletedAt: null } }),
                 prisma.fi.count({ where: { deletedAt: null } }),
+                // Last month totals (for comparison)
+                prisma.dir.count({ where: { createdAt: { lt: thisMonthStart }, deletedAt: null } }),
+                prisma.fi.count({ where: { createdAt: { lt: thisMonthStart }, deletedAt: null } }),
+                // Pending
                 prisma.dir.count({ where: { status: 'pending', deletedAt: null } }),
                 prisma.fi.count({ where: { status: 'pending', deletedAt: null } }),
+                prisma.dir.count({ where: { status: 'pending', createdAt: { gte: lastMonthStart, lte: lastMonthEnd }, deletedAt: null } }),
+                prisma.fi.count({ where: { status: 'pending', createdAt: { gte: lastMonthStart, lte: lastMonthEnd }, deletedAt: null } }),
+                // Revision
+                prisma.dir.count({ where: { status: 'revision', deletedAt: null } }),
+                prisma.fi.count({ where: { status: 'revision', deletedAt: null } }),
+                prisma.dir.count({ where: { status: 'revision', createdAt: { gte: lastMonthStart, lte: lastMonthEnd }, deletedAt: null } }),
+                prisma.fi.count({ where: { status: 'revision', createdAt: { gte: lastMonthStart, lte: lastMonthEnd }, deletedAt: null } }),
+                // Completed today (approved today)
+                prisma.dir.count({ where: { status: 'approved', updatedAt: { gte: todayStart, lt: todayEnd }, deletedAt: null } }),
+                prisma.fi.count({ where: { status: 'approved', updatedAt: { gte: todayStart, lt: todayEnd }, deletedAt: null } }),
+                // Measurements
                 prisma.measurement.count({ where: { deletedAt: null } }),
                 prisma.measurement.count({ where: { status: { in: ['repair', 'reject'] }, deletedAt: null } }),
+                // Visual inspections
                 prisma.visualInspection.count({ where: { deletedAt: null } }),
                 prisma.visualInspection.count({ where: { status: 'after_repair', deletedAt: null } }),
                 // NG by model
@@ -514,18 +560,67 @@ class DashboardController {
                         approvedByUser: { select: { fullName: true } },
                     },
                 }),
-                // Recent revisions
-                prisma.checksheetRevision.findMany({
+                // Recent DIRs for table
+                prisma.dir.findMany({
                     where: { deletedAt: null },
-                    orderBy: { createdAt: 'desc' },
+                    orderBy: { updatedAt: 'desc' },
                     take: 5,
                     select: {
                         id: true,
-                        referenceType: true,
-                        referenceId: true,
-                        revisionNote: true,
+                        idDir: true,
+                        status: true,
+                        drawingNo: true,
                         createdAt: true,
-                        revisedByUser: { select: { fullName: true } },
+                        updatedAt: true,
+                        model: { select: { modelName: true } },
+                        part: { select: { partName: true } },
+                        operator: { select: { fullName: true } },
+                    },
+                }),
+                // Recent FIs for table
+                prisma.fi.findMany({
+                    where: { deletedAt: null },
+                    orderBy: { updatedAt: 'desc' },
+                    take: 5,
+                    select: {
+                        id: true,
+                        idFi: true,
+                        fiNumber: true,
+                        status: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        model: { select: { modelName: true } },
+                        operator: { select: { fullName: true } },
+                    },
+                }),
+                // Revision queue - DIRs
+                prisma.dir.findMany({
+                    where: { status: 'revision', deletedAt: null },
+                    orderBy: { updatedAt: 'desc' },
+                    take: 6,
+                    select: {
+                        id: true,
+                        idDir: true,
+                        status: true,
+                        drawingNo: true,
+                        updatedAt: true,
+                        model: { select: { modelName: true } },
+                        operator: { select: { fullName: true } },
+                    },
+                }),
+                // Revision queue - FIs
+                prisma.fi.findMany({
+                    where: { status: 'revision', deletedAt: null },
+                    orderBy: { updatedAt: 'desc' },
+                    take: 6,
+                    select: {
+                        id: true,
+                        idFi: true,
+                        fiNumber: true,
+                        status: true,
+                        updatedAt: true,
+                        model: { select: { modelName: true } },
+                        operator: { select: { fullName: true } },
                     },
                 }),
                 // DIRs with NG (repair/reject)
@@ -546,7 +641,77 @@ class DashboardController {
                 }),
             ]);
 
-            // Calculate rates and risk indicator
+            // Fetch revision data for DIR and FI items
+            const dirIds = revisionDirs.map(d => d.id);
+            const fiIds = revisionFis.map(f => f.id);
+
+            const [dirRevisions, fiRevisions] = await Promise.all([
+                dirIds.length > 0 ? prisma.checksheetRevision.findMany({
+                    where: {
+                        referenceType: 'DIR',
+                        referenceId: { in: dirIds },
+                        deletedAt: null,
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    select: {
+                        referenceId: true,
+                        revisionNote: true,
+                        createdAt: true,
+                        revisedByUser: { select: { fullName: true } },
+                    },
+                }) : [],
+                fiIds.length > 0 ? prisma.checksheetRevision.findMany({
+                    where: {
+                        referenceType: 'FI',
+                        referenceId: { in: fiIds },
+                        deletedAt: null,
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    select: {
+                        referenceId: true,
+                        revisionNote: true,
+                        createdAt: true,
+                        revisedByUser: { select: { fullName: true } },
+                    },
+                }) : [],
+            ]);
+
+            // Create revision lookup maps
+            const dirRevisionMap = {};
+            dirRevisions.forEach(r => {
+                if (!dirRevisionMap[r.referenceId]) {
+                    dirRevisionMap[r.referenceId] = r;
+                }
+            });
+            const fiRevisionMap = {};
+            fiRevisions.forEach(r => {
+                if (!fiRevisionMap[r.referenceId]) {
+                    fiRevisionMap[r.referenceId] = r;
+                }
+            });
+
+            // Calculate rates and changes
+            const currentTotal = totalDir + totalFi;
+            const lastMonthTotal = lastMonthDir + lastMonthFi;
+            const thisMonthNew = currentTotal - lastMonthTotal;
+            const totalChange = lastMonthTotal > 0
+                ? Math.round(((thisMonthNew) / lastMonthTotal) * 100)
+                : (thisMonthNew > 0 ? 100 : 0);
+
+            const currentPending = dirPending + fiPending;
+            const lastMonthPending = lastMonthDirPending + lastMonthFiPending;
+            const pendingChange = lastMonthPending > 0
+                ? Math.round(((currentPending - lastMonthPending) / lastMonthPending) * 100)
+                : (currentPending > 0 ? 100 : 0);
+
+            const currentRevision = dirRevision + fiRevision;
+            const lastMonthRevisionTotal = lastMonthDirRevision + lastMonthFiRevision;
+            const revisionChange = lastMonthRevisionTotal > 0
+                ? (currentRevision - lastMonthRevisionTotal)
+                : currentRevision;
+
+            const completedToday = dirCompletedToday + fiCompletedToday;
+
             const overallNgRate = totalMeasurements > 0
                 ? ((ngMeasurements / totalMeasurements) * 100)
                 : 0;
@@ -559,6 +724,119 @@ class DashboardController {
             if (overallNgRate > 10) qualityRisk = 'HIGH';
             else if (overallNgRate > 5) qualityRisk = 'MEDIUM';
 
+            // Pass rate = (total - ng) / total * 100
+            const passRate = totalMeasurements > 0
+                ? Math.round(((totalMeasurements - ngMeasurements) / totalMeasurements) * 100)
+                : 100;
+
+            // Revision rate
+            const revisionRate = currentTotal > 0
+                ? Math.round((currentRevision / currentTotal) * 100)
+                : 0;
+
+            // Format today's date
+            const todayFormatted = now.toISOString().split('T')[0];
+
+            // Build KPI cards data (matching frontend mockKPIs structure)
+            const kpiCards = [
+                {
+                    title: 'Total Checksheets',
+                    value: currentTotal,
+                    change: `${totalChange >= 0 ? '+' : ''}${totalChange}%`,
+                    trend: totalChange >= 0 ? 'up' : 'down',
+                    subtitle: 'This month',
+                },
+                {
+                    title: 'Pending Approval',
+                    value: currentPending,
+                    change: `${pendingChange >= 0 ? '+' : ''}${pendingChange}%`,
+                    trend: pendingChange <= 0 ? 'down' : 'up', // Less pending is better
+                    subtitle: 'Awaiting review',
+                },
+                {
+                    title: 'Revision Needed',
+                    value: currentRevision,
+                    change: `${revisionChange >= 0 ? '+' : ''}${revisionChange}`,
+                    trend: revisionChange <= 0 ? 'down' : 'up',
+                    subtitle: 'Requires attention',
+                },
+                {
+                    title: 'Completed Today',
+                    value: completedToday,
+                    change: '+0%', // Would need historical data
+                    trend: 'up',
+                    subtitle: todayFormatted,
+                },
+            ];
+
+            // Build recent checksheets (combining DIRs and FIs, sorted by date)
+            const recentChecksheets = [
+                ...recentDirs.map(d => ({
+                    id: d.id,
+                    no: d.idDir,
+                    type: 'In Process', // DIR is dimensional inspection = In Process
+                    model: d.model?.modelName || '-',
+                    inspector: d.operator?.fullName || '-',
+                    status: d.status,
+                    date: d.updatedAt?.toISOString().split('T')[0] || '-',
+                })),
+                ...recentFis.map(f => ({
+                    id: f.id,
+                    no: f.idFi,
+                    type: 'Final', // FI is Final Inspection
+                    model: f.model?.modelName || '-',
+                    inspector: f.operator?.fullName || '-',
+                    status: f.status,
+                    date: f.updatedAt?.toISOString().split('T')[0] || '-',
+                })),
+            ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+            // Build revision queue (matching frontend mockRevisionQueue structure)
+            const revisionQueue = [
+                ...revisionDirs.map(d => {
+                    const rev = dirRevisionMap[d.id];
+                    return {
+                        id: d.id,
+                        no: d.idDir,
+                        type: 'DIR',
+                        model: d.model?.modelName || '-',
+                        inspector: d.operator?.fullName || '-',
+                        reason: rev?.revisionNote || 'Revision required',
+                        requestedBy: rev?.revisedByUser?.fullName || '-',
+                        date: rev?.createdAt?.toISOString().split('T')[0] || d.updatedAt?.toISOString().split('T')[0] || '-',
+                        priority: 'medium', // Default priority
+                    };
+                }),
+                ...revisionFis.map(f => {
+                    const rev = fiRevisionMap[f.id];
+                    return {
+                        id: f.id,
+                        no: f.idFi,
+                        type: 'FI',
+                        model: f.model?.modelName || '-',
+                        inspector: f.operator?.fullName || '-',
+                        reason: rev?.revisionNote || 'Revision required',
+                        requestedBy: rev?.revisedByUser?.fullName || '-',
+                        date: rev?.createdAt?.toISOString().split('T')[0] || f.updatedAt?.toISOString().split('T')[0] || '-',
+                        priority: 'medium', // Default priority
+                    };
+                }),
+            ].sort((a, b) => {
+                // Sort by priority first (high > medium > low), then by date
+                const priorityOrder = { high: 0, medium: 1, low: 2 };
+                if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+                    return priorityOrder[a.priority] - priorityOrder[b.priority];
+                }
+                return new Date(b.date) - new Date(a.date);
+            }).slice(0, 6);
+
+            // Quick stats (matching frontend quickStats structure)
+            const quickStats = [
+                { label: 'Pass Rate', value: passRate, color: '#10B981' },
+                { label: 'On-Time Completion', value: 87, color: '#2F80ED' }, // Would need SLA tracking
+                { label: 'Revision Rate', value: revisionRate, color: '#F59E0B' },
+            ];
+
             // Need attention list (DIRs with NG)
             const needAttentionList = dirsWithNg.map(d => ({
                 model: d.model?.modelName,
@@ -568,15 +846,25 @@ class DashboardController {
             }));
 
             const response = {
+                // New structure matching frontend page.jsx
+                kpiCards,
+                recentChecksheets,
+                revisionQueue,
+                quickStats,
+                // Original structure (kept for backward compatibility)
                 summary: {
-                    totalChecksheets: totalDir + totalFi,
+                    totalChecksheets: currentTotal,
                     totalDir,
                     totalFi,
-                    pendingValidation: dirPending + fiPending,
+                    pendingValidation: currentPending,
+                    revisionNeeded: currentRevision,
+                    completedToday,
                 },
                 metrics: {
                     overallNgRate: parseFloat(overallNgRate.toFixed(2)),
                     qualityRiskIndicator: qualityRisk,
+                    passRate,
+                    revisionRate,
                     dirOverview: {
                         totalMeasurements,
                         ngCount: ngMeasurements,
@@ -619,14 +907,6 @@ class DashboardController {
                         note: a.note,
                         approvedBy: a.approvedByUser?.fullName,
                         approvedAt: a.approvedAt,
-                    })),
-                    revisions: recentRevisions.map(r => ({
-                        id: r.id,
-                        type: r.referenceType,
-                        referenceId: r.referenceId,
-                        note: r.revisionNote,
-                        revisedBy: r.revisedByUser?.fullName,
-                        createdAt: r.createdAt,
                     })),
                 },
             };

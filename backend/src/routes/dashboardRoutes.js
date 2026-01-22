@@ -188,14 +188,13 @@ router.get('/approver', (req, res) => dashboardController.getApproverDashboard(r
  *     summary: Get Operator (Super Admin) Dashboard
  *     description: |
  *       Full system overview with comprehensive quality metrics.
- *       Includes:
- *       - Total checksheet counts
- *       - Overall NG rate and quality risk indicator
- *       - DIR overview (worst Cpk, parameters at risk)
- *       - FI overview (top NG items, after-repair rate)
- *       - Need attention list
+ *       Optimized for frontend dashboard page with:
+ *       - KPI cards (Total Checksheets, Pending Approval, Revision Needed, Completed Today)
+ *       - Recent checksheets table (no, type, model, inspector, status, date)
+ *       - Revision queue (no, model, inspector, reason, requestedBy, date, priority)
+ *       - Quick stats (Pass Rate, On-Time Completion, Revision Rate)
  *       - System configuration status
- *       - Recent admin activity
+ *       - Need attention list
  *     tags: [Dashboard]
  *     security:
  *       - bearerAuth: []
@@ -214,6 +213,96 @@ router.get('/approver', (req, res) => dashboardController.getApproverDashboard(r
  *                 data:
  *                   type: object
  *                   properties:
+ *                     kpiCards:
+ *                       type: array
+ *                       description: KPI cards for dashboard header
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           title:
+ *                             type: string
+ *                             example: "Total Checksheets"
+ *                           value:
+ *                             type: integer
+ *                             example: 1247
+ *                           change:
+ *                             type: string
+ *                             example: "+12%"
+ *                           trend:
+ *                             type: string
+ *                             enum: [up, down]
+ *                           subtitle:
+ *                             type: string
+ *                             example: "This month"
+ *                     recentChecksheets:
+ *                       type: array
+ *                       description: Recent checksheets for table display
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           no:
+ *                             type: string
+ *                             example: "DIR-2026-001"
+ *                           type:
+ *                             type: string
+ *                             example: "In Process"
+ *                           model:
+ *                             type: string
+ *                             example: "Pump XYZ-100"
+ *                           inspector:
+ *                             type: string
+ *                             example: "John Doe"
+ *                           status:
+ *                             type: string
+ *                             enum: [pending, checked, revision, approved]
+ *                           date:
+ *                             type: string
+ *                             format: date
+ *                     revisionQueue:
+ *                       type: array
+ *                       description: Items requiring revision
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           no:
+ *                             type: string
+ *                           type:
+ *                             type: string
+ *                             enum: [DIR, FI]
+ *                           model:
+ *                             type: string
+ *                           inspector:
+ *                             type: string
+ *                           reason:
+ *                             type: string
+ *                             example: "Dimension out of tolerance"
+ *                           requestedBy:
+ *                             type: string
+ *                           date:
+ *                             type: string
+ *                             format: date
+ *                           priority:
+ *                             type: string
+ *                             enum: [high, medium, low]
+ *                     quickStats:
+ *                       type: array
+ *                       description: Quick performance statistics
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           label:
+ *                             type: string
+ *                             example: "Pass Rate"
+ *                           value:
+ *                             type: integer
+ *                             example: 94
+ *                           color:
+ *                             type: string
+ *                             example: "#10B981"
  *                     summary:
  *                       type: object
  *                       properties:
@@ -225,6 +314,10 @@ router.get('/approver', (req, res) => dashboardController.getApproverDashboard(r
  *                           type: integer
  *                         pendingValidation:
  *                           type: integer
+ *                         revisionNeeded:
+ *                           type: integer
+ *                         completedToday:
+ *                           type: integer
  *                     metrics:
  *                       type: object
  *                       properties:
@@ -233,6 +326,10 @@ router.get('/approver', (req, res) => dashboardController.getApproverDashboard(r
  *                         qualityRiskIndicator:
  *                           type: string
  *                           enum: [LOW, MEDIUM, HIGH]
+ *                         passRate:
+ *                           type: integer
+ *                         revisionRate:
+ *                           type: integer
  *                         dirOverview:
  *                           type: object
  *                         fiOverview:
@@ -244,10 +341,13 @@ router.get('/approver', (req, res) => dashboardController.getApproverDashboard(r
  *                         properties:
  *                           model:
  *                             type: string
+ *                           dirCode:
+ *                             type: string
  *                           issueSummary:
  *                             type: string
  *                           severity:
  *                             type: string
+ *                             enum: [LOW, MEDIUM, HIGH]
  *                     systemConfiguration:
  *                       type: object
  *                       properties:
@@ -263,8 +363,6 @@ router.get('/approver', (req, res) => dashboardController.getApproverDashboard(r
  *                       type: object
  *                       properties:
  *                         approvals:
- *                           type: array
- *                         revisions:
  *                           type: array
  *       403:
  *         description: Access denied - Operator role required

@@ -220,6 +220,14 @@ describe('ESQCMS Dashboard API Tests', () => {
             expect(res.status).toBe(200);
             expect(res.headers['content-type']).toMatch(/json/);
             expect(res.body.success).toBe(true);
+
+            // New frontend-optimized structure
+            expect(res.body.data).toHaveProperty('kpiCards');
+            expect(res.body.data).toHaveProperty('recentChecksheets');
+            expect(res.body.data).toHaveProperty('revisionQueue');
+            expect(res.body.data).toHaveProperty('quickStats');
+
+            // Original structure (backward compatible)
             expect(res.body.data).toHaveProperty('summary');
             expect(res.body.data).toHaveProperty('metrics');
             expect(res.body.data).toHaveProperty('needAttention');
@@ -231,10 +239,14 @@ describe('ESQCMS Dashboard API Tests', () => {
             expect(res.body.data.summary).toHaveProperty('totalDir');
             expect(res.body.data.summary).toHaveProperty('totalFi');
             expect(res.body.data.summary).toHaveProperty('pendingValidation');
+            expect(res.body.data.summary).toHaveProperty('revisionNeeded');
+            expect(res.body.data.summary).toHaveProperty('completedToday');
 
             // Verify metrics structure
             expect(res.body.data.metrics).toHaveProperty('overallNgRate');
             expect(res.body.data.metrics).toHaveProperty('qualityRiskIndicator');
+            expect(res.body.data.metrics).toHaveProperty('passRate');
+            expect(res.body.data.metrics).toHaveProperty('revisionRate');
             expect(res.body.data.metrics).toHaveProperty('dirOverview');
             expect(res.body.data.metrics).toHaveProperty('fiOverview');
 
@@ -250,6 +262,107 @@ describe('ESQCMS Dashboard API Tests', () => {
                 qualityRisk: res.body.data.metrics.qualityRiskIndicator,
                 templates: res.body.data.systemConfiguration.templatesConfigured,
             });
+        });
+
+        it('GET /api/dashboard/operator - KPI cards should have correct structure', async () => {
+            const res = await request(app)
+                .get('/api/dashboard/operator')
+                .set('Authorization', `Bearer ${operatorToken}`);
+
+            expect(res.status).toBe(200);
+            expect(Array.isArray(res.body.data.kpiCards)).toBe(true);
+            expect(res.body.data.kpiCards.length).toBe(4);
+
+            // Verify each KPI card structure
+            res.body.data.kpiCards.forEach((card) => {
+                expect(card).toHaveProperty('title');
+                expect(card).toHaveProperty('value');
+                expect(card).toHaveProperty('change');
+                expect(card).toHaveProperty('trend');
+                expect(card).toHaveProperty('subtitle');
+                expect(['up', 'down']).toContain(card.trend);
+            });
+
+            // Verify specific KPI titles
+            const titles = res.body.data.kpiCards.map(c => c.title);
+            expect(titles).toContain('Total Checksheets');
+            expect(titles).toContain('Pending Approval');
+            expect(titles).toContain('Revision Needed');
+            expect(titles).toContain('Completed Today');
+
+            console.log('   📊 KPI Cards:', res.body.data.kpiCards.map(c => `${c.title}: ${c.value} (${c.change})`));
+        });
+
+        it('GET /api/dashboard/operator - Recent checksheets should match frontend table structure', async () => {
+            const res = await request(app)
+                .get('/api/dashboard/operator')
+                .set('Authorization', `Bearer ${operatorToken}`);
+
+            expect(res.status).toBe(200);
+            expect(Array.isArray(res.body.data.recentChecksheets)).toBe(true);
+
+            // Verify each checksheet has required fields for frontend table
+            res.body.data.recentChecksheets.forEach((item) => {
+                expect(item).toHaveProperty('id');
+                expect(item).toHaveProperty('no');
+                expect(item).toHaveProperty('type');
+                expect(item).toHaveProperty('model');
+                expect(item).toHaveProperty('inspector');
+                expect(item).toHaveProperty('status');
+                expect(item).toHaveProperty('date');
+            });
+
+            console.log('   📊 Recent Checksheets:', res.body.data.recentChecksheets.length, 'items');
+        });
+
+        it('GET /api/dashboard/operator - Revision queue should match frontend structure', async () => {
+            const res = await request(app)
+                .get('/api/dashboard/operator')
+                .set('Authorization', `Bearer ${operatorToken}`);
+
+            expect(res.status).toBe(200);
+            expect(Array.isArray(res.body.data.revisionQueue)).toBe(true);
+
+            // Verify each revision queue item has required fields
+            res.body.data.revisionQueue.forEach((item) => {
+                expect(item).toHaveProperty('id');
+                expect(item).toHaveProperty('no');
+                expect(item).toHaveProperty('type');
+                expect(item).toHaveProperty('model');
+                expect(item).toHaveProperty('inspector');
+                expect(item).toHaveProperty('reason');
+                expect(item).toHaveProperty('requestedBy');
+                expect(item).toHaveProperty('date');
+                expect(item).toHaveProperty('priority');
+                expect(['high', 'medium', 'low']).toContain(item.priority);
+            });
+
+            console.log('   📊 Revision Queue:', res.body.data.revisionQueue.length, 'items');
+        });
+
+        it('GET /api/dashboard/operator - Quick stats should have correct structure', async () => {
+            const res = await request(app)
+                .get('/api/dashboard/operator')
+                .set('Authorization', `Bearer ${operatorToken}`);
+
+            expect(res.status).toBe(200);
+            expect(Array.isArray(res.body.data.quickStats)).toBe(true);
+            expect(res.body.data.quickStats.length).toBe(3);
+
+            // Verify each quick stat structure
+            res.body.data.quickStats.forEach((stat) => {
+                expect(stat).toHaveProperty('label');
+                expect(stat).toHaveProperty('value');
+                expect(stat).toHaveProperty('color');
+            });
+
+            // Verify specific stat labels
+            const labels = res.body.data.quickStats.map(s => s.label);
+            expect(labels).toContain('Pass Rate');
+            expect(labels).toContain('On-Time Completion');
+            expect(labels).toContain('Revision Rate');
+
+            console.log('   📊 Quick Stats:', res.body.data.quickStats.map(s => `${s.label}: ${s.value}%`));
         });
 
         it('GET /api/dashboard/operator - Supervisor cannot access operator dashboard', async () => {
@@ -342,6 +455,20 @@ describe('ESQCMS Dashboard API Tests', () => {
             expect(['LOW', 'MEDIUM', 'HIGH']).toContain(res.body.data.metrics.qualityRiskIndicator);
         });
 
+        it('Operator dashboard should return valid pass rate and revision rate', async () => {
+            const res = await request(app)
+                .get('/api/dashboard/operator')
+                .set('Authorization', `Bearer ${operatorToken}`);
+
+            expect(res.status).toBe(200);
+            expect(typeof res.body.data.metrics.passRate).toBe('number');
+            expect(typeof res.body.data.metrics.revisionRate).toBe('number');
+            expect(res.body.data.metrics.passRate).toBeGreaterThanOrEqual(0);
+            expect(res.body.data.metrics.passRate).toBeLessThanOrEqual(100);
+            expect(res.body.data.metrics.revisionRate).toBeGreaterThanOrEqual(0);
+            expect(res.body.data.metrics.revisionRate).toBeLessThanOrEqual(100);
+        });
+
         it('Approver dashboard should return array for topNgItems', async () => {
             const res = await request(app)
                 .get('/api/dashboard/approver')
@@ -358,6 +485,19 @@ describe('ESQCMS Dashboard API Tests', () => {
 
             expect(res.status).toBe(200);
             expect(Array.isArray(res.body.data.needAttention)).toBe(true);
+        });
+
+        it('Operator dashboard kpiCards values should be numbers', async () => {
+            const res = await request(app)
+                .get('/api/dashboard/operator')
+                .set('Authorization', `Bearer ${operatorToken}`);
+
+            expect(res.status).toBe(200);
+            res.body.data.kpiCards.forEach((card) => {
+                expect(typeof card.value).toBe('number');
+                expect(typeof card.title).toBe('string');
+                expect(typeof card.change).toBe('string');
+            });
         });
     });
 });
