@@ -24,6 +24,7 @@ const templateItemRoutes = require('./templateItemRoutes');
 const checksheetRevisionRoutes = require('./checksheetRevisionRoutes');
 const checksheetApprovalRoutes = require('./checksheetApprovalRoutes');
 const checksheetWorkflowRoutes = require('./checksheetWorkflowRoutes');
+const checksheetMonitoringRoutes = require('./checksheetMonitoringRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 
 // Mount routes
@@ -48,6 +49,7 @@ router.use('/checksheet-templates', checksheetTemplateRoutes);
 router.use('/template-items', templateItemRoutes);
 router.use('/checksheet-revisions', checksheetRevisionRoutes);
 router.use('/checksheet-approvals', checksheetApprovalRoutes);
+router.use('/checksheets/monitoring', checksheetMonitoringRoutes);
 
 // Checksheet workflow routes (business flow endpoints)
 router.use('/', checksheetWorkflowRoutes);

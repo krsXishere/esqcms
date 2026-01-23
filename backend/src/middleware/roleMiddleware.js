@@ -16,7 +16,6 @@ const checkRole = (allowedRoles) => {
             return ResponseHelper.error(
                 res,
                 'Access denied. Insufficient permissions.',
-                null,
                 403
             );
         }
@@ -36,7 +35,6 @@ const canCreateChecksheet = (req, res, next) => {
         return ResponseHelper.error(
             res,
             'Only inspectors can create checksheets',
-            null,
             403
         );
     }
@@ -55,7 +53,6 @@ const canApproveChecksheet = (req, res, next) => {
         return ResponseHelper.error(
             res,
             'Only supervisors can approve checksheets',
-            null,
             403
         );
     }
@@ -74,7 +71,6 @@ const canManageMasterData = (req, res, next) => {
         return ResponseHelper.error(
             res,
             'Only administrators can manage master data',
-            null,
             403
         );
     }
@@ -93,7 +89,6 @@ const canViewAnalytics = (req, res, next) => {
         return ResponseHelper.error(
             res,
             'Access denied to analytics',
-            null,
             403
         );
     }

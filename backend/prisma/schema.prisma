@@ -41,6 +41,12 @@ enum TemplateType {
     fi
 }
 
+enum TemplateStatus {
+    active
+    draft
+    inactive
+}
+
 enum ReferenceType {
     dir
     fi
@@ -334,16 +340,17 @@ model Drawing {
 }
 
 model ChecksheetTemplate {
-    id           String       @id @default(uuid()) @db.Uuid
-    templateCode String       @unique @map("template_code") @db.VarChar(20)
-    templateName String       @map("template_name") @db.VarChar(100)
+    id           String         @id @default(uuid()) @db.Uuid
+    templateCode String         @unique @map("template_code") @db.VarChar(20)
+    templateName String         @map("template_name") @db.VarChar(100)
     type         TemplateType
-    modelId      String       @map("model_id") @db.Uuid
-    partId       String       @map("part_id") @db.Uuid
-    description  String       @db.Text
-    createdAt    DateTime     @default(now()) @map("created_at")
-    updatedAt    DateTime?    @updatedAt @map("updated_at")
-    deletedAt    DateTime?    @map("deleted_at")
+    status       TemplateStatus @default(draft)
+    modelId      String         @map("model_id") @db.Uuid
+    partId       String         @map("part_id") @db.Uuid
+    description  String         @db.Text
+    createdAt    DateTime       @default(now()) @map("created_at")
+    updatedAt    DateTime?      @updatedAt @map("updated_at")
+    deletedAt    DateTime?      @map("deleted_at")
 
     // Relations
     model         Model          @relation(fields: [modelId], references: [id])

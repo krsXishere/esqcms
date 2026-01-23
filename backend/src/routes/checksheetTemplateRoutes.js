@@ -11,10 +11,46 @@ router.use(authMiddleware);
  * /checksheet-templates:
  *   get:
  *     summary: Get all checksheet templates
- *     description: Retrieve all checksheet templates
+ *     description: Retrieve all checksheet templates with filtering and pagination
  *     tags: [Checksheet Templates]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by template code or name
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [dir, fi]
+ *         description: Filter by template type
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, draft, inactive]
+ *         description: Filter by template status
+ *       - in: query
+ *         name: modelId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by model ID
  *     responses:
  *       200:
  *         description: Checksheet templates retrieved successfully
@@ -28,9 +64,65 @@ router.use(authMiddleware);
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/ChecksheetTemplate'
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       code:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                         enum: [In Process, Final]
+ *                       fields:
+ *                         type: integer
+ *                       lastModified:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                         enum: [active, draft, inactive]
+ *                 pagination:
+ *                   type: object
  */
 router.get('/', (req, res) => checksheetTemplateController.getAll(req, res));
+
+/**
+ * @swagger
+ * /checksheet-templates/stats:
+ *   get:
+ *     summary: Get template statistics
+ *     description: Get counts of templates by status for dashboard stats cards
+ *     tags: [Checksheet Templates]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Template stats retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Total templates count
+ *                     active:
+ *                       type: integer
+ *                       description: Active templates count
+ *                     draft:
+ *                       type: integer
+ *                       description: Draft templates count
+ *                     inactive:
+ *                       type: integer
+ *                       description: Inactive templates count
+ */
+router.get('/stats', (req, res) => checksheetTemplateController.getStats(req, res));
 
 /**
  * @swagger
